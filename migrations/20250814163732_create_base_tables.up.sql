@@ -10,6 +10,19 @@ CREATE TABLE organizations (
     description TEXT NOT NULL
 );
 
+CREATE TABLE users (
+    id UUID PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    patronymic VARCHAR(255),
+    phone VARCHAR(255),
+    telegram_id BIGINT,
+    phone_verified BOOLEAN NOT NULL,
+    telegram_verified BOOLEAN NOT NULL
+);
+
 CREATE TABLE branches (
     id UUID PRIMARY KEY,
     created_at TIMESTAMP NOT NULL,
@@ -33,9 +46,6 @@ CREATE TABLE employees (
     id UUID PRIMARY KEY,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    first_name VARCHAR(255) NOT NULL,
-    last_name VARCHAR(255) NOT NULL,
-    patronymic VARCHAR(255),
     contact_phone VARCHAR(255),
     contact_email VARCHAR(255),
     contact_telegram VARCHAR(255),
@@ -45,8 +55,11 @@ CREATE TABLE employees (
 
     organization_id UUID NOT NULL,
     manager_branch_id UUID,
+    user_id UUID NOT NULL,
     FOREIGN KEY (organization_id) REFERENCES organizations(id),
-    FOREIGN KEY (manager_branch_id) REFERENCES branches(id)
+    FOREIGN KEY (manager_branch_id) REFERENCES branches(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE (user_id, organization_id)
 );
 
 CREATE TABLE services (
@@ -94,12 +107,12 @@ CREATE TABLE customers (
     id UUID PRIMARY KEY,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    phone VARCHAR(255) NOT NULL,
-    first_name VARCHAR(255) NOT NULL,
-    last_name VARCHAR(255) NOT NULL,
-    patronymic VARCHAR(255),
     organization_id UUID NOT NULL,
-    UNIQUE (phone, organization_id)
+
+    user_id UUID NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (organization_id) REFERENCES organizations(id),
+    UNIQUE (user_id, organization_id)
 );
 
 CREATE TYPE notify_method AS ENUM ('sms', 'telegram');
@@ -132,38 +145,24 @@ CREATE TABLE booking_status_change (
     FOREIGN KEY (who_id) REFERENCES employees(id)
 );
 
-CREATE TYPE user_type AS ENUM ('customer', 'employee');
-CREATE TYPE auth_method AS ENUM ('sms', 'telegram');
-
-CREATE TABLE auth (
-    id UUID PRIMARY KEY,
-    created_at TIMESTAMP NOT NULL,
-    user_type user_type NOT NULL,
-    user_id UUID NOT NULL, -- denormalized key
-    method auth_method NOT NULL,
-    phone VARCHAR(255),
-    telegram_id BIGINT,
-    verified BOOLEAN NOT NULL,
-
-    UNIQUE (user_id, user_type, method)
-);
-
 CREATE TABLE phone_verify_codes (
     id UUID PRIMARY KEY,
     created_at TIMESTAMP NOT NULL,
-    user_type user_type NOT NULL,
-    user_id UUID NOT NULL, -- denormalized key
     code INTEGER NOT NULL,
     expire_at TIMESTAMP NOT NULL,
-    used BOOLEAN NOT NULL
+    used BOOLEAN NOT NULL,
+
+    user_id UUID NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE telegram_verify_hashes (
     id UUID PRIMARY KEY,
     created_at TIMESTAMP NOT NULL,
-    user_type user_type NOT NULL,
-    user_id UUID NOT NULL, -- denormalized key
     hash BYTEA NOT NULL,
     expire_at TIMESTAMP NOT NULL,
-    used BOOLEAN NOT NULL
+    used BOOLEAN NOT NULL,
+
+    user_id UUID NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
