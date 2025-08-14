@@ -93,3 +93,13 @@ The codebase uses `yare` for parameterized testing. Key practices:
 - Supports SMS and Telegram bots
 - Configurable timing with quiet hours
 - Templates are customizable per organization
+
+## Mermaid ER Diagram Notes
+
+When creating Mermaid ER diagrams, avoid these common mistakes:
+1. **DO NOT use PK-FK or PK_FK notation** - Mermaid doesn't support compound annotations like "PK-FK". Use separate PK and FK annotations.
+2. **Composite primary keys** - When a table has composite primary keys, list each field with PK annotation separately
+3. **Syntax rules**:
+   - After field type, only PK, FK, or UK annotations are allowed
+   - No hyphens or underscores in annotations
+   - Each field should be on its own line with proper spacing
