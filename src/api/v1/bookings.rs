@@ -16,7 +16,7 @@ pub enum GetServicesResponse {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetAvailableMastersResponse {
+pub enum GetMastersResponse {
     #[oai(status = 200)]
     Ok(Json<Vec<MasterOut>>),
 
@@ -25,7 +25,7 @@ pub enum GetAvailableMastersResponse {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetAvailableBranchesResponse {
+pub enum GetBranchesResponse {
     #[oai(status = 200)]
     Ok(Json<Vec<BranchOut>>),
 
@@ -77,22 +77,22 @@ impl BookingsApi {
     }
 
     #[tracing::instrument]
-    #[oai(path = "/masters/available", method = "get")]
-    async fn get_available_masters(
+    #[oai(path = "/masters", method = "get")]
+    async fn get_masters(
         &self,
         Query(organization_id): Query<Uuid>,
         Query(branches): Query<Vec<Uuid>>,
-    ) -> GetAvailableMastersResponse {
+    ) -> GetMastersResponse {
         todo!()
     }
 
     #[tracing::instrument]
-    #[oai(path = "/branches/available", method = "get")]
-    async fn get_available_branches(
+    #[oai(path = "/branches", method = "get")]
+    async fn get_branches(
         &self,
         Query(organization_id): Query<Uuid>,
         Query(masters): Query<Vec<Uuid>>,
-    ) -> GetAvailableBranchesResponse {
+    ) -> GetBranchesResponse {
         todo!()
     }
 }
