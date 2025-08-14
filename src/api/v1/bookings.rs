@@ -1,6 +1,8 @@
 use poem_openapi::{ApiResponse, Object, OpenApi, param::Query, payload::Json};
 use uuid::Uuid;
 
+use crate::api::error::ApiError;
+
 #[derive(Clone, Debug)]
 pub struct BookingsApi;
 
@@ -10,7 +12,7 @@ pub enum GetServicesResponse {
     Ok(Json<Vec<ServiceOut>>),
 
     #[oai(status = 500)]
-    InternalServerError,
+    InternalServerError(Json<ApiError>),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
@@ -19,7 +21,7 @@ pub enum GetAvailableMastersResponse {
     Ok(Json<Vec<MasterOut>>),
 
     #[oai(status = 500)]
-    InternalServerError,
+    InternalServerError(Json<ApiError>),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
@@ -28,7 +30,7 @@ pub enum GetAvailableBranchesResponse {
     Ok(Json<Vec<BranchOut>>),
 
     #[oai(status = 500)]
-    InternalServerError,
+    InternalServerError(Json<ApiError>),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Object)]
