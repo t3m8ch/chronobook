@@ -1,11 +1,27 @@
 use chrono::{DateTime, Duration, Utc};
-use poem_openapi::{ApiResponse, Object, OpenApi, param::Query, payload::Json};
+use poem_openapi::{ApiResponse, Enum, Object, OpenApi, param::Query, payload::Json};
 use uuid::Uuid;
 
 use crate::api::error::ApiError;
 
 #[derive(Clone, Debug)]
 pub struct BookingsApi;
+
+#[derive(Debug, Clone, Eq, PartialEq, Object)]
+pub struct CreateBookingRequest {
+    pub service_id: Uuid,
+    pub master_id: Uuid,
+    pub branch_id: Uuid,
+    pub start: DateTime<Utc>,
+    pub end: DateTime<Utc>,
+    pub notify_methods: Vec<NotifyMethod>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Enum)]
+pub enum NotifyMethod {
+    Sms,
+    Telegram,
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
 pub enum GetServicesResponse {
@@ -38,6 +54,27 @@ pub enum GetBranchesResponse {
 pub enum GetWindowsResponse {
     #[oai(status = 200)]
     Ok(Json<Vec<WindowOut>>),
+
+    #[oai(status = 500)]
+    InternalServerError(Json<ApiError>),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
+pub enum CreateBookingResponse {
+    #[oai(status = 201)]
+    Created(Json<BookingOut>),
+
+    #[oai(status = 404)]
+    NotFound(Json<ApiError>),
+
+    #[oai(status = 409)]
+    AlreadyBooked(Json<ApiError>),
+
+    #[oai(status = 400)]
+    InvalidToken(Json<ApiError>),
+
+    #[oai(status = 400)]
+    TokenExpired(Json<ApiError>),
 
     #[oai(status = 500)]
     InternalServerError(Json<ApiError>),
@@ -76,6 +113,11 @@ pub struct BranchOut {
     region: String,
     country: String,
     address_info: Option<String>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Object)]
+pub struct BookingOut {
+    id: Uuid,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Object)]
@@ -130,6 +172,15 @@ impl BookingsApi {
         #[oai(default = "default_min_datetime")] Query(min_datetime): Query<DateTime<Utc>>,
         #[oai(default = "default_max_datetime")] Query(max_datetime): Query<DateTime<Utc>>,
     ) -> GetWindowsResponse {
+        todo!()
+    }
+
+    #[tracing::instrument]
+    #[oai(path = "/", method = "post")]
+    async fn create_booking(
+        &self,
+        Json(request): Json<CreateBookingRequest>,
+    ) -> CreateBookingResponse {
         todo!()
     }
 }
