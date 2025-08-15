@@ -1,6 +1,7 @@
 use dotenv::dotenv;
 use poem::{Route, Server, listener::TcpListener};
 use poem_openapi::OpenApiService;
+use tracing_subscriber::EnvFilter;
 
 use crate::api::v1::{auth::AuthApi, bookings::BookingsApi};
 
@@ -9,6 +10,10 @@ mod api;
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     dotenv().ok();
+
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
 
     let server_addr = std::env::var("SERVER_ADDR").unwrap_or("0.0.0.0:3222".to_string());
     let openapi_addr = std::env::var("OPENAPI_ADDR").unwrap_or(server_addr.clone());
