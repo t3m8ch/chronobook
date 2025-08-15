@@ -14,13 +14,21 @@ CREATE TABLE users (
     id UUID PRIMARY KEY,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
+    phone VARCHAR(255) UNIQUE,
+    telegram_id BIGINT UNIQUE,
+    phone_verified_at TIMESTAMP,
+    telegram_verified_at TIMESTAMP
+);
+
+CREATE TABLE user_profiles (
+    user_id UUID PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     patronymic VARCHAR(255),
-    phone VARCHAR(255),
-    telegram_id BIGINT,
-    phone_verified BOOLEAN NOT NULL,
-    telegram_verified BOOLEAN NOT NULL
+
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE branches (

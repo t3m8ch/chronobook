@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS employees;
 DROP TABLE IF EXISTS branches;
 DROP TABLE IF EXISTS organizations;
 
+DROP TABLE IF EXISTS user_profiles;
 DROP TABLE IF EXISTS users;
 
 DROP TYPE IF EXISTS booking_status;
