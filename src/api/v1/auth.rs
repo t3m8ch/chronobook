@@ -16,6 +16,13 @@ pub struct PhoneVerifyRequest {
     pub code: u32,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Object)]
+pub struct UpdateProfileRequest {
+    pub first_name: String,
+    pub last_name: String,
+    pub patronymic: Option<String>,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
 pub enum PhoneLoginResponse {
     #[oai(status = 200)]
@@ -82,6 +89,21 @@ pub enum RefreshResponse {
     InternalServerError(Json<ApiError>),
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
+pub enum UpdateProfileResponse {
+    #[oai(status = 200)]
+    Ok(Json<AccessToken>),
+
+    #[oai(status = 400)]
+    InvalidToken(Json<ApiError>),
+
+    #[oai(status = 400)]
+    TokenExpired(Json<ApiError>),
+
+    #[oai(status = 500)]
+    InternalServerError(Json<ApiError>),
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Object)]
 pub struct TelegramVerifyHash {
     pub hash: String,
@@ -121,6 +143,15 @@ impl AuthApi {
     #[tracing::instrument]
     #[oai(path = "/refresh", method = "post")]
     async fn refresh(&self) -> RefreshResponse {
+        todo!()
+    }
+
+    #[tracing::instrument]
+    #[oai(path = "/profile", method = "put")]
+    async fn update_profile(
+        &self,
+        Json(request): Json<UpdateProfileRequest>,
+    ) -> UpdateProfileResponse {
         todo!()
     }
 }
