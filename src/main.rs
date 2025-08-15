@@ -1,3 +1,4 @@
+use dotenv::dotenv;
 use poem::{Route, Server, listener::TcpListener};
 use poem_openapi::OpenApiService;
 
@@ -7,8 +8,13 @@ mod api;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
+    dotenv().ok();
+
+    let server_addr = std::env::var("SERVER_ADDR").unwrap_or("0.0.0.0:3222".to_string());
+    let openapi_addr = std::env::var("OPENAPI_ADDR").unwrap_or(server_addr.clone());
+
     let api_service = OpenApiService::new((BookingsApi, AuthApi), "Chronobook API", "1.0")
-        .server("http://37.233.85.221:3222/api/v1");
+        .server(format!("http://{openapi_addr}/api/v1"));
 
     let stoplight_ui = api_service.stoplight_elements();
 
@@ -16,7 +22,5 @@ async fn main() -> Result<(), std::io::Error> {
         .nest("/api/v1", api_service)
         .nest("/docs/stoplight", stoplight_ui);
 
-    Server::new(TcpListener::bind("0.0.0.0:3222"))
-        .run(app)
-        .await
+    Server::new(TcpListener::bind(server_addr)).run(app).await
 }
