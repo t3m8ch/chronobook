@@ -1,7 +1,10 @@
-use poem_openapi::{OpenApi, param::Path};
+use poem_openapi::{OpenApi, param::Path, payload::Json};
 use uuid::Uuid;
 
-use crate::models::dashboard::response::GetOrganizationDashboardResponse;
+use crate::models::{
+    branch::{request::CreateBranchRequest, response::CreateBranchResponse},
+    dashboard::response::GetOrganizationDashboardResponse,
+};
 
 #[derive(Clone, Debug)]
 pub struct AdminApi;
@@ -14,6 +17,15 @@ impl AdminApi {
         &self,
         Path(organization_id): Path<Uuid>,
     ) -> GetOrganizationDashboardResponse {
+        todo!()
+    }
+
+    #[tracing::instrument]
+    #[oai(path = "/branches", method = "post")]
+    pub async fn create_branch(
+        &self,
+        Json(request): Json<CreateBranchRequest>,
+    ) -> CreateBranchResponse {
         todo!()
     }
 }
