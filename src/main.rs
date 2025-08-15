@@ -3,7 +3,7 @@ use poem::{Route, Server, listener::TcpListener};
 use poem_openapi::OpenApiService;
 use tracing_subscriber::EnvFilter;
 
-use crate::api::v1::{auth::AuthApi, bookings::BookingsApi};
+use crate::api::v1::{admin::AdminApi, auth::AuthApi, bookings::BookingsApi};
 
 mod api;
 mod models;
@@ -19,8 +19,9 @@ async fn main() -> Result<(), std::io::Error> {
     let server_addr = std::env::var("SERVER_ADDR").unwrap_or("0.0.0.0:3222".to_string());
     let openapi_addr = std::env::var("OPENAPI_ADDR").unwrap_or(server_addr.clone());
 
-    let api_service = OpenApiService::new((BookingsApi, AuthApi), "Chronobook API", "1.0")
-        .server(format!("http://{openapi_addr}/api/v1"));
+    let api_service =
+        OpenApiService::new((BookingsApi, AdminApi, AuthApi), "Chronobook API", "1.0")
+            .server(format!("http://{openapi_addr}/api/v1"));
 
     let stoplight_ui = api_service.stoplight_elements();
 
