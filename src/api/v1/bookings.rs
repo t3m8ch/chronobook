@@ -19,7 +19,7 @@ pub struct BookingsApi;
 impl BookingsApi {
     #[tracing::instrument]
     #[oai(path = "/services", method = "get")]
-    async fn get_services(&self, Query(organization_id): Query<Uuid>) -> GetServicesResponse {
+    async fn get_services(&self, Query(organization_name): Query<String>) -> GetServicesResponse {
         todo!()
     }
 
@@ -27,7 +27,7 @@ impl BookingsApi {
     #[oai(path = "/masters", method = "get")]
     async fn get_masters(
         &self,
-        Query(organization_id): Query<Uuid>,
+        Query(organization_name): Query<String>,
         Query(branches): Query<Vec<Uuid>>,
     ) -> GetMastersResponse {
         todo!()
@@ -37,7 +37,7 @@ impl BookingsApi {
     #[oai(path = "/branches", method = "get")]
     async fn get_branches(
         &self,
-        Query(organization_id): Query<Uuid>,
+        Query(organization_name): Query<String>,
         Query(masters): Query<Vec<Uuid>>,
     ) -> GetBranchesResponse {
         todo!()
@@ -47,7 +47,7 @@ impl BookingsApi {
     #[oai(path = "/windows", method = "get")]
     async fn get_windows(
         &self,
-        Query(organization_id): Query<Uuid>,
+        Query(organization_name): Query<String>,
         Query(masters): Query<Vec<Uuid>>,
         Query(branches): Query<Vec<Uuid>>,
         #[oai(default = "default_min_datetime")] Query(min_datetime): Query<DateTime<Utc>>,
