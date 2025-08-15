@@ -1,5 +1,9 @@
 use chrono::{DateTime, Duration, Utc};
-use poem_openapi::{OpenApi, param::Query, payload::Json};
+use poem_openapi::{
+    OpenApi,
+    param::{Path, Query},
+    payload::Json,
+};
 use uuid::Uuid;
 
 use crate::models::{
@@ -8,7 +12,8 @@ use crate::models::{
         response::{CreateBookingResponse, GetWindowsResponse},
     },
     branch::response::GetBranchesResponse,
-    master::response::GetMastersResponse,
+    master::response::{GetMasterByIdResponse, GetMastersResponse},
+    organization::response::GetOrganizationByNameResponse,
     service::response::GetServicesResponse,
 };
 
@@ -17,6 +22,15 @@ pub struct BookingsApi;
 
 #[OpenApi(prefix_path = "/bookings")]
 impl BookingsApi {
+    #[tracing::instrument]
+    #[oai(path = "/organizations/{organization_name}", method = "get")]
+    async fn get_organization_by_name(
+        &self,
+        Path(organization_name): Path<String>,
+    ) -> GetOrganizationByNameResponse {
+        todo!()
+    }
+
     #[tracing::instrument]
     #[oai(path = "/services", method = "get")]
     async fn get_services(&self, Query(organization_name): Query<String>) -> GetServicesResponse {
@@ -30,6 +44,12 @@ impl BookingsApi {
         Query(organization_name): Query<String>,
         Query(branches): Query<Vec<Uuid>>,
     ) -> GetMastersResponse {
+        todo!()
+    }
+
+    #[tracing::instrument]
+    #[oai(path = "/masters/{master_id}", method = "get")]
+    async fn get_master_by_id(&self, Path(master_id): Path<Uuid>) -> GetMasterByIdResponse {
         todo!()
     }
 

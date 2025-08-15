@@ -12,6 +12,30 @@ pub enum GetMastersResponse {
     InternalServerError(Json<ApiError>),
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
+pub enum GetMasterByIdResponse {
+    #[oai(status = 200)]
+    Ok(Json<MasterOut>),
+
+    #[oai(status = 404)]
+    NotFound(Json<ApiError>),
+
+    #[oai(status = 500)]
+    InternalServerError(Json<ApiError>),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
+pub enum GetMasterByNameResponse {
+    #[oai(status = 200)]
+    Ok(Json<MasterOut>),
+
+    #[oai(status = 404)]
+    NotFound(Json<ApiError>),
+
+    #[oai(status = 500)]
+    InternalServerError(Json<ApiError>),
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Object)]
 pub struct MasterOut {
     id: Uuid,

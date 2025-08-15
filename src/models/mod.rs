@@ -3,5 +3,6 @@ pub mod booking;
 pub mod branch;
 pub mod error;
 pub mod master;
+pub mod organization;
 pub mod service;
 pub mod validation;
