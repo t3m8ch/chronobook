@@ -6,6 +6,7 @@ use tracing_subscriber::EnvFilter;
 use crate::api::v1::{auth::AuthApi, bookings::BookingsApi};
 
 mod api;
+mod models;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {

@@ -1,121 +1,15 @@
-use poem_openapi::{ApiResponse, Object, OpenApi, payload::Json};
+use poem_openapi::{OpenApi, payload::Json};
 
-use crate::api::{error::ApiError, validators::PhoneValidator};
+use crate::models::auth::{
+    request::{PhoneLoginRequest, PhoneVerifyRequest, UpdateProfileRequest},
+    response::{
+        PhoneLoginResponse, PhoneVerifyResponse, RefreshResponse, TelegramLoginResponse,
+        TelegramVerifyResponse, UpdateProfileResponse,
+    },
+};
 
 #[derive(Clone, Debug)]
 pub struct AuthApi;
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct PhoneLoginRequest {
-    #[oai(validator(custom = "PhoneValidator"))]
-    pub phone: String,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct PhoneVerifyRequest {
-    #[oai(validator(custom = "PhoneValidator"))]
-    pub phone: String,
-
-    pub code: u32,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct UpdateProfileRequest {
-    pub first_name: String,
-    pub last_name: String,
-    pub patronymic: Option<String>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum PhoneLoginResponse {
-    #[oai(status = 200)]
-    Ok,
-
-    #[oai(status = 429)]
-    TooManyRequests(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum TelegramLoginResponse {
-    #[oai(status = 200)]
-    Ok(Json<TelegramVerifyHash>),
-
-    #[oai(status = 429)]
-    TooManyRequests(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum PhoneVerifyResponse {
-    #[oai(status = 200)]
-    Ok(Json<AccessToken>),
-
-    #[oai(status = 400)]
-    InvalidCode(Json<ApiError>),
-
-    #[oai(status = 400)]
-    CodeExpired(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum TelegramVerifyResponse {
-    #[oai(status = 200)]
-    Ok(Json<AccessToken>),
-
-    #[oai(status = 400)]
-    Unverified(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum RefreshResponse {
-    #[oai(status = 200)]
-    Ok(Json<AccessToken>),
-
-    #[oai(status = 400)]
-    InvalidToken(Json<ApiError>),
-
-    #[oai(status = 400)]
-    TokenExpired(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum UpdateProfileResponse {
-    #[oai(status = 200)]
-    Ok(Json<AccessToken>),
-
-    #[oai(status = 400)]
-    InvalidToken(Json<ApiError>),
-
-    #[oai(status = 400)]
-    TokenExpired(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct TelegramVerifyHash {
-    pub hash: String,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct AccessToken {
-    pub access_token: String,
-}
 
 #[OpenApi(prefix_path = "/auth")]
 impl AuthApi {

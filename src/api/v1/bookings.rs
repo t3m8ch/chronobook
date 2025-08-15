@@ -1,138 +1,19 @@
 use chrono::{DateTime, Duration, Utc};
-use poem_openapi::{ApiResponse, Enum, Object, OpenApi, param::Query, payload::Json};
+use poem_openapi::{OpenApi, param::Query, payload::Json};
 use uuid::Uuid;
 
-use crate::api::error::ApiError;
+use crate::models::{
+    booking::{
+        request::CreateBookingRequest,
+        response::{CreateBookingResponse, GetWindowsResponse},
+    },
+    branch::response::GetBranchesResponse,
+    master::response::GetMastersResponse,
+    service::response::GetServicesResponse,
+};
 
 #[derive(Clone, Debug)]
 pub struct BookingsApi;
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct CreateBookingRequest {
-    pub service_id: Uuid,
-    pub master_id: Uuid,
-    pub branch_id: Uuid,
-    pub start: DateTime<Utc>,
-    pub end: DateTime<Utc>,
-    pub notify_methods: Vec<NotifyMethod>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Enum)]
-pub enum NotifyMethod {
-    Sms,
-    Telegram,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetServicesResponse {
-    #[oai(status = 200)]
-    Ok(Json<Vec<ServiceOut>>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetMastersResponse {
-    #[oai(status = 200)]
-    Ok(Json<Vec<MasterOut>>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetBranchesResponse {
-    #[oai(status = 200)]
-    Ok(Json<Vec<BranchOut>>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetWindowsResponse {
-    #[oai(status = 200)]
-    Ok(Json<Vec<WindowOut>>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum CreateBookingResponse {
-    #[oai(status = 201)]
-    Created(Json<BookingOut>),
-
-    #[oai(status = 404)]
-    NotFound(Json<ApiError>),
-
-    #[oai(status = 409)]
-    AlreadyBooked(Json<ApiError>),
-
-    #[oai(status = 400)]
-    InvalidToken(Json<ApiError>),
-
-    #[oai(status = 400)]
-    TokenExpired(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct ServiceOut {
-    id: Uuid,
-    name: String,
-    description: String,
-    duration_minutes: Option<u32>,
-    price: String,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct MasterOut {
-    id: Uuid,
-    first_name: String,
-    last_name: String,
-    patronymic: Option<String>,
-    contact_phone: Option<String>,
-    contact_email: Option<String>,
-    contact_telegram: Option<String>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct BranchOut {
-    id: Uuid,
-    name: String,
-    description: String,
-    timezone: String,
-    street: String,
-    house_number: String,
-    apartment_number: String,
-    city: String,
-    region: String,
-    country: String,
-    address_info: Option<String>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct BookingOut {
-    id: Uuid,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct WindowOut {
-    id: Uuid,
-    slots: Vec<SlotOut>,
-    master: MasterOut,
-    branch: BranchOut,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct SlotOut {
-    start_time: DateTime<Utc>,
-    end_time: DateTime<Utc>,
-}
 
 #[OpenApi(prefix_path = "/bookings")]
 impl BookingsApi {
