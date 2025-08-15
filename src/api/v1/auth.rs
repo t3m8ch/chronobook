@@ -1,4 +1,4 @@
-use poem_openapi::{ApiResponse, Object, OpenApi, param::Path, payload::Json};
+use poem_openapi::{ApiResponse, Object, OpenApi, payload::Json};
 
 use crate::api::{error::ApiError, validators::PhoneValidator};
 
@@ -17,37 +17,7 @@ pub struct PhoneVerifyRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum CustomerPhoneLoginResponse {
-    #[oai(status = 200)]
-    Ok,
-
-    #[oai(status = 404)]
-    NotFound(Json<ApiError>),
-
-    #[oai(status = 429)]
-    TooManyRequests(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum CustomerTelegramLoginResponse {
-    #[oai(status = 200)]
-    Ok(Json<TelegramVerifyHash>),
-
-    #[oai(status = 404)]
-    NotFound(Json<ApiError>),
-
-    #[oai(status = 429)]
-    TooManyRequests(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum EmployeePhoneLoginResponse {
+pub enum PhoneLoginResponse {
     #[oai(status = 200)]
     Ok,
 
@@ -59,7 +29,7 @@ pub enum EmployeePhoneLoginResponse {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum EmployeeTelegramLoginResponse {
+pub enum TelegramLoginResponse {
     #[oai(status = 200)]
     Ok(Json<TelegramVerifyHash>),
 
@@ -125,85 +95,32 @@ pub struct AccessToken {
 #[OpenApi(prefix_path = "/auth")]
 impl AuthApi {
     #[tracing::instrument]
-    #[oai(path = "/customer/{organization_name}/login/phone", method = "post")]
-    async fn customer_login_via_phone(
-        &self,
-        Path(organization_name): Path<String>,
-        Json(request): Json<PhoneLoginRequest>,
-    ) -> CustomerPhoneLoginResponse {
+    #[oai(path = "/login/phone", method = "post")]
+    async fn login_via_phone(&self, Json(request): Json<PhoneLoginRequest>) -> PhoneLoginResponse {
         todo!()
     }
 
     #[tracing::instrument]
-    #[oai(path = "/customer/{organization_name}/verify/phone", method = "post")]
-    async fn customer_verify_phone(
-        &self,
-        Path(organization_name): Path<String>,
-        Json(request): Json<PhoneVerifyRequest>,
-    ) -> PhoneVerifyResponse {
+    #[oai(path = "/verify/phone", method = "post")]
+    async fn verify_phone(&self, Json(request): Json<PhoneVerifyRequest>) -> PhoneVerifyResponse {
         todo!()
     }
 
     #[tracing::instrument]
-    #[oai(path = "/customer/{organization_name}/login/telegram", method = "post")]
-    async fn customer_login_via_telegram(
-        &self,
-        Path(organization_name): Path<String>,
-    ) -> CustomerTelegramLoginResponse {
+    #[oai(path = "/login/telegram", method = "post")]
+    async fn login_via_telegram(&self) -> TelegramLoginResponse {
         todo!()
     }
 
     #[tracing::instrument]
-    #[oai(
-        path = "/customer/{organization_name}/verify/telegram",
-        method = "post"
-    )]
-    async fn customer_verify_telegram(
-        &self,
-        Path(organization_name): Path<String>,
-    ) -> TelegramVerifyResponse {
+    #[oai(path = "/verify/telegram", method = "post")]
+    async fn verify_telegram(&self) -> TelegramVerifyResponse {
         todo!()
     }
 
     #[tracing::instrument]
-    #[oai(path = "/customer/{organization_name}/refresh", method = "post")]
-    async fn customer_refresh(&self, Path(organization_name): Path<String>) -> RefreshResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/employee/login/phone", method = "post")]
-    async fn employee_login_via_phone(
-        &self,
-        Json(request): Json<PhoneLoginRequest>,
-    ) -> EmployeePhoneLoginResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/employee/verify/phone", method = "post")]
-    async fn employee_verify_phone(
-        &self,
-        Json(request): Json<PhoneVerifyRequest>,
-    ) -> PhoneVerifyResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/employee/login/telegram", method = "post")]
-    async fn employee_login_via_telegram(&self) -> EmployeeTelegramLoginResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/employee/verify/telegram", method = "post")]
-    async fn employee_verify_telegram(&self) -> TelegramVerifyResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/employee/refresh", method = "post")]
-    async fn employee_refresh(&self) -> RefreshResponse {
+    #[oai(path = "/refresh", method = "post")]
+    async fn refresh(&self) -> RefreshResponse {
         todo!()
     }
 }
