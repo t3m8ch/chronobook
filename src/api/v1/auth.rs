@@ -13,6 +13,9 @@ pub struct PhoneLoginRequest {
 
 #[derive(Debug, Clone, Eq, PartialEq, Object)]
 pub struct PhoneVerifyRequest {
+    #[oai(validator(custom = "PhoneValidator"))]
+    pub phone: String,
+
     pub code: u32,
 }
 
