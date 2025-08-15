@@ -1,3 +1,4 @@
+use chrono::{DateTime, Duration, Utc};
 use poem_openapi::{ApiResponse, Object, OpenApi, param::Query, payload::Json};
 use uuid::Uuid;
 
@@ -28,6 +29,15 @@ pub enum GetMastersResponse {
 pub enum GetBranchesResponse {
     #[oai(status = 200)]
     Ok(Json<Vec<BranchOut>>),
+
+    #[oai(status = 500)]
+    InternalServerError(Json<ApiError>),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
+pub enum GetWindowsResponse {
+    #[oai(status = 200)]
+    Ok(Json<Vec<WindowOut>>),
 
     #[oai(status = 500)]
     InternalServerError(Json<ApiError>),
@@ -68,6 +78,20 @@ pub struct BranchOut {
     address_info: Option<String>,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Object)]
+pub struct WindowOut {
+    id: Uuid,
+    slots: Vec<SlotOut>,
+    master: MasterOut,
+    branch: BranchOut,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Object)]
+pub struct SlotOut {
+    start_time: DateTime<Utc>,
+    end_time: DateTime<Utc>,
+}
+
 #[OpenApi(prefix_path = "/bookings")]
 impl BookingsApi {
     #[tracing::instrument]
@@ -95,4 +119,25 @@ impl BookingsApi {
     ) -> GetBranchesResponse {
         todo!()
     }
+
+    #[tracing::instrument]
+    #[oai(path = "/windows", method = "get")]
+    async fn get_windows(
+        &self,
+        Query(organization_id): Query<Uuid>,
+        Query(masters): Query<Vec<Uuid>>,
+        Query(branches): Query<Vec<Uuid>>,
+        #[oai(default = "default_min_datetime")] Query(min_datetime): Query<DateTime<Utc>>,
+        #[oai(default = "default_max_datetime")] Query(max_datetime): Query<DateTime<Utc>>,
+    ) -> GetWindowsResponse {
+        todo!()
+    }
+}
+
+fn default_min_datetime() -> DateTime<Utc> {
+    Utc::now()
+}
+
+fn default_max_datetime() -> DateTime<Utc> {
+    Utc::now() + Duration::days(30)
 }
