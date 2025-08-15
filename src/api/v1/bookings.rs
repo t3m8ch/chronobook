@@ -11,8 +11,8 @@ use crate::models::{
         request::CreateBookingRequest,
         response::{CreateBookingResponse, GetWindowsResponse},
     },
-    branch::response::GetBookingBranchesResponse,
-    master::response::{GetBookingMastersResponse, GetMasterByIdResponse},
+    branch::response::GetBranchesResponse,
+    master::response::{GetMasterByIdResponse, GetMastersResponse},
     organization::response::GetOrganizationByNameResponse,
     service::response::GetServicesResponse,
 };
@@ -43,7 +43,7 @@ impl BookingsApi {
         &self,
         Query(organization_name): Query<String>,
         Query(branches): Query<Vec<Uuid>>,
-    ) -> GetBookingMastersResponse {
+    ) -> GetMastersResponse {
         todo!()
     }
 
@@ -59,7 +59,7 @@ impl BookingsApi {
         &self,
         Query(organization_name): Query<String>,
         Query(masters): Query<Vec<Uuid>>,
-    ) -> GetBookingBranchesResponse {
+    ) -> GetBranchesResponse {
         todo!()
     }
 

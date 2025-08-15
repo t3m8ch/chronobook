@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod booking;
 pub mod branch;
+pub mod dashboard;
 pub mod error;
 pub mod master;
 pub mod organization;
