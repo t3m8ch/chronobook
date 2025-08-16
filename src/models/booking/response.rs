@@ -1,39 +1,8 @@
-use poem_openapi::{ApiResponse, Object, payload::Json};
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::models::{booking::request::WindowOut, error::ApiError};
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum CreateBookingResponse {
-    #[oai(status = 201)]
-    Created(Json<BookingOut>),
-
-    #[oai(status = 404)]
-    NotFound(Json<ApiError>),
-
-    #[oai(status = 409)]
-    AlreadyBooked(Json<ApiError>),
-
-    #[oai(status = 400)]
-    InvalidToken(Json<ApiError>),
-
-    #[oai(status = 400)]
-    TokenExpired(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct BookingOut {
     id: Uuid,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetWindowsResponse {
-    #[oai(status = 200)]
-    Ok(Json<Vec<WindowOut>>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
 }

@@ -1,95 +1,92 @@
-use chrono::{DateTime, Duration, Utc};
-use poem_openapi::{
-    OpenApi,
-    param::{Path, Query},
-    payload::Json,
+use axum::{
+    Json,
+    extract::{Query, State},
+    response::IntoResponse,
+    routing::{Router, get},
 };
-use uuid::Uuid;
+use std::sync::Arc;
 
-use crate::models::{
-    booking::{
-        request::CreateBookingRequest,
-        response::{CreateBookingResponse, GetWindowsResponse},
+use crate::{
+    AppState,
+    models::{
+        branch::{request::GetBranchesQuery, response::BranchOut},
+        error::ApiError,
+        master::response::{GetMastersQuery, MasterOut},
+        service::{request::GetServicesQuery, response::ServiceOut},
     },
-    branch::response::GetBranchesResponse,
-    master::response::{GetMasterByIdResponse, GetMastersResponse},
-    organization::response::GetOrganizationByNameResponse,
-    service::response::GetServicesResponse,
 };
 
-#[derive(Clone, Debug)]
-pub struct BookingsApi;
-
-#[OpenApi(prefix_path = "/bookings")]
-impl BookingsApi {
-    #[tracing::instrument]
-    #[oai(path = "/organizations/{organization_name}", method = "get")]
-    async fn get_organization_by_name(
-        &self,
-        Path(organization_name): Path<String>,
-    ) -> GetOrganizationByNameResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/services", method = "get")]
-    async fn get_services(&self, Query(organization_name): Query<String>) -> GetServicesResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/masters", method = "get")]
-    async fn get_masters(
-        &self,
-        Query(organization_name): Query<String>,
-        Query(branches): Query<Vec<Uuid>>,
-    ) -> GetMastersResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/masters/{master_id}", method = "get")]
-    async fn get_master_by_id(&self, Path(master_id): Path<Uuid>) -> GetMasterByIdResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/branches", method = "get")]
-    async fn get_branches(
-        &self,
-        Query(organization_name): Query<String>,
-        Query(masters): Query<Vec<Uuid>>,
-    ) -> GetBranchesResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/windows", method = "get")]
-    async fn get_windows(
-        &self,
-        Query(organization_name): Query<String>,
-        Query(masters): Query<Vec<Uuid>>,
-        Query(branches): Query<Vec<Uuid>>,
-        #[oai(default = "default_min_datetime")] Query(min_datetime): Query<DateTime<Utc>>,
-        #[oai(default = "default_max_datetime")] Query(max_datetime): Query<DateTime<Utc>>,
-    ) -> GetWindowsResponse {
-        todo!()
-    }
-
-    #[tracing::instrument]
-    #[oai(path = "/", method = "post")]
-    async fn create_booking(
-        &self,
-        Json(request): Json<CreateBookingRequest>,
-    ) -> CreateBookingResponse {
-        todo!()
-    }
+pub fn router() -> Router<Arc<AppState>> {
+    Router::new()
+        .route("/services", get(get_services))
+        .route("/masters", get(get_masters))
+        .route("/branches", get(get_branches))
 }
 
-fn default_min_datetime() -> DateTime<Utc> {
-    Utc::now()
+#[utoipa::path(
+    get,
+    path = "/api/v1/bookings/services",
+    params(
+        ("organization_id" = Uuid, Query, description = "Organization ID")
+    ),
+    responses(
+        (status = 200, description = "List of services", body = Vec<ServiceOut>),
+        (status = 400, description = "Bad request", body = ApiError),
+        (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    tag = "bookings"
+)]
+#[tracing::instrument]
+pub async fn get_services(
+    State(_state): State<Arc<AppState>>,
+    Query(query): Query<GetServicesQuery>,
+) -> Result<impl IntoResponse, ApiError> {
+    // TODO: Implement get services logic
+    Ok(Json(Vec::<ServiceOut>::new()))
 }
 
-fn default_max_datetime() -> DateTime<Utc> {
-    Utc::now() + Duration::days(30)
+#[utoipa::path(
+    get,
+    path = "/api/v1/bookings/masters",
+    params(
+        ("organization_id" = Uuid, Query, description = "Organization ID"),
+        ("branches[]" = Vec<Uuid>, Query, description = "Branch IDs filter")
+    ),
+    responses(
+        (status = 200, description = "List of masters", body = Vec<MasterOut>),
+        (status = 400, description = "Bad request", body = ApiError),
+        (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    tag = "bookings"
+)]
+#[tracing::instrument]
+pub async fn get_masters(
+    State(_state): State<Arc<AppState>>,
+    Query(query): Query<GetMastersQuery>,
+) -> Result<impl IntoResponse, ApiError> {
+    // TODO: Implement get masters logic
+    Ok(Json(Vec::<MasterOut>::new()))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/bookings/branches",
+    params(
+        ("organization_id" = Uuid, Query, description = "Organization ID"),
+        ("masters[]" = Vec<Uuid>, Query, description = "Master IDs filter")
+    ),
+    responses(
+        (status = 200, description = "List of branches", body = Vec<BranchOut>),
+        (status = 400, description = "Bad request", body = ApiError),
+        (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    tag = "bookings"
+)]
+#[tracing::instrument]
+pub async fn get_branches(
+    State(_state): State<Arc<AppState>>,
+    Query(query): Query<GetBranchesQuery>,
+) -> Result<impl IntoResponse, ApiError> {
+    // TODO: Implement get branches logic
+    Ok(Json(Vec::<BranchOut>::new()))
 }

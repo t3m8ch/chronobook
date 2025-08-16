@@ -1,42 +1,8 @@
-use poem_openapi::{ApiResponse, Object, payload::Json};
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::models::error::ApiError;
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetMastersResponse {
-    #[oai(status = 200)]
-    Ok(Json<Vec<MasterOut>>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetMasterByIdResponse {
-    #[oai(status = 200)]
-    Ok(Json<MasterOut>),
-
-    #[oai(status = 404)]
-    NotFound(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetMasterByNameResponse {
-    #[oai(status = 200)]
-    Ok(Json<MasterOut>),
-
-    #[oai(status = 404)]
-    NotFound(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct MasterOut {
     id: Uuid,
     first_name: String,
@@ -45,4 +11,11 @@ pub struct MasterOut {
     contact_phone: Option<String>,
     contact_email: Option<String>,
     contact_telegram: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GetMastersQuery {
+    pub organization_id: Uuid,
+    #[serde(default)]
+    pub branches: Vec<Uuid>,
 }

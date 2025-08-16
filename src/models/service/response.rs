@@ -1,18 +1,8 @@
-use poem_openapi::{ApiResponse, Object, payload::Json};
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::models::error::ApiError;
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetServicesResponse {
-    #[oai(status = 200)]
-    Ok(Json<Vec<ServiceOut>>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct ServiceOut {
     id: Uuid,
     name: String,
@@ -21,31 +11,7 @@ pub struct ServiceOut {
     price: String,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum CreateServiceResponse {
-    #[oai(status = 201)]
-    Created(Json<CreateServiceOut>),
-
-    #[oai(status = 404)]
-    NotFound(Json<ApiError>),
-
-    #[oai(status = 401)]
-    Unauthorized(Json<ApiError>),
-
-    #[oai(status = 403)]
-    Forbidden(Json<ApiError>),
-
-    #[oai(status = 400)]
-    InvalidToken(Json<ApiError>),
-
-    #[oai(status = 400)]
-    TokenExpired(Json<ApiError>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct CreateServiceOut {
     pub id: Uuid,
 }
