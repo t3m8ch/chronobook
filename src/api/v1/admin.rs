@@ -2,10 +2,10 @@ use axum::{
     Json,
     extract::{Path, State},
     response::IntoResponse,
-    routing::{Router, get, post},
 };
 use std::sync::Arc;
 use uuid::Uuid;
+use utoipa_axum::{routes, router::OpenApiRouter};
 
 use crate::{
     AppState,
@@ -20,18 +20,15 @@ use crate::{
     },
 };
 
-pub fn router() -> Router<Arc<AppState>> {
-    Router::new()
-        .route("/organizations", post(create_organization))
-        .route(
-            "/dashboard/{organization_id}",
-            get(get_organization_dashboard),
-        )
-        .route("/branches", post(create_branch))
-        .route("/branches", get(get_branches))
-        .route("/masters", get(get_masters))
-        .route("/employees", post(create_employee))
-        .route("/services", post(create_service))
+pub fn router() -> OpenApiRouter<Arc<AppState>> {
+    OpenApiRouter::new()
+        .routes(routes!(create_organization))
+        .routes(routes!(get_organization_dashboard))
+        .routes(routes!(create_branch))
+        .routes(routes!(get_branches))
+        .routes(routes!(get_masters))
+        .routes(routes!(create_employee))
+        .routes(routes!(create_service))
 }
 
 #[utoipa::path(

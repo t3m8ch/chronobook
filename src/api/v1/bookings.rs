@@ -2,9 +2,9 @@ use axum::{
     Json,
     extract::{Query, State},
     response::IntoResponse,
-    routing::{Router, get},
 };
 use std::sync::Arc;
+use utoipa_axum::{routes, router::OpenApiRouter};
 
 use crate::{
     AppState,
@@ -16,11 +16,11 @@ use crate::{
     },
 };
 
-pub fn router() -> Router<Arc<AppState>> {
-    Router::new()
-        .route("/services", get(get_services))
-        .route("/masters", get(get_masters))
-        .route("/branches", get(get_branches))
+pub fn router() -> OpenApiRouter<Arc<AppState>> {
+    OpenApiRouter::new()
+        .routes(routes!(get_services))
+        .routes(routes!(get_masters))
+        .routes(routes!(get_branches))
 }
 
 #[utoipa::path(

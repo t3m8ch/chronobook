@@ -2,9 +2,9 @@ use axum::{
     Json,
     extract::{Path, State},
     response::IntoResponse,
-    routing::{Router, post},
 };
 use std::sync::Arc;
+use utoipa_axum::{routes, router::OpenApiRouter};
 
 use crate::{
     AppState,
@@ -20,35 +20,18 @@ use crate::{
     },
 };
 
-pub fn router() -> Router<Arc<AppState>> {
-    Router::new()
-        // Customer auth routes
-        .route(
-            "/customer/{organization_name}/login/phone",
-            post(customer::login_phone),
-        )
-        .route(
-            "/customer/{organization_name}/verify/phone",
-            post(customer::verify_phone),
-        )
-        .route(
-            "/customer/{organization_name}/login/telegram",
-            post(customer::login_telegram),
-        )
-        .route(
-            "/customer/{organization_name}/verify/telegram",
-            post(customer::verify_telegram),
-        )
-        .route(
-            "/customer/{organization_name}/refresh",
-            post(customer::refresh),
-        )
-        // Employee auth routes
-        .route("/employee/login/phone", post(employee::login_phone))
-        .route("/employee/verify/phone", post(employee::verify_phone))
-        .route("/employee/login/telegram", post(employee::login_telegram))
-        .route("/employee/verify/telegram", post(employee::verify_telegram))
-        .route("/employee/refresh", post(employee::refresh))
+pub fn router() -> OpenApiRouter<Arc<AppState>> {
+    OpenApiRouter::new()
+        .routes(routes!(customer::login_phone))
+        .routes(routes!(customer::verify_phone))
+        .routes(routes!(customer::login_telegram))
+        .routes(routes!(customer::verify_telegram))
+        .routes(routes!(customer::refresh))
+        .routes(routes!(employee::login_phone))
+        .routes(routes!(employee::verify_phone))
+        .routes(routes!(employee::login_telegram))
+        .routes(routes!(employee::verify_telegram))
+        .routes(routes!(employee::refresh))
 }
 
 pub mod customer {
