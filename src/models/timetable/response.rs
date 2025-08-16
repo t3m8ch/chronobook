@@ -4,27 +4,9 @@ use uuid::Uuid;
 use crate::models::error::ApiError;
 
 #[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetServicesResponse {
-    #[oai(status = 200)]
-    Ok(Json<Vec<ServiceOut>>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct ServiceOut {
-    id: Uuid,
-    name: String,
-    description: String,
-    duration_minutes: Option<u32>,
-    price: String,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum CreateServiceResponse {
+pub enum CreateTimetableResponse {
     #[oai(status = 201)]
-    Created(Json<CreateServiceOut>),
+    Created(Json<CreateTimetableOut>),
 
     #[oai(status = 404)]
     NotFound(Json<ApiError>),
@@ -46,6 +28,30 @@ pub enum CreateServiceResponse {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct CreateServiceOut {
-    pub id: Uuid,
+pub struct CreateTimetableOut {
+    pub master_id: Uuid,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
+pub enum CreateDayRedefinitionResponse {
+    #[oai(status = 201)]
+    Created,
+
+    #[oai(status = 404)]
+    NotFound(Json<ApiError>),
+
+    #[oai(status = 401)]
+    Unauthorized(Json<ApiError>),
+
+    #[oai(status = 403)]
+    Forbidden(Json<ApiError>),
+
+    #[oai(status = 400)]
+    InvalidToken(Json<ApiError>),
+
+    #[oai(status = 400)]
+    TokenExpired(Json<ApiError>),
+
+    #[oai(status = 500)]
+    InternalServerError(Json<ApiError>),
 }

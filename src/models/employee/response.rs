@@ -4,27 +4,9 @@ use uuid::Uuid;
 use crate::models::error::ApiError;
 
 #[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum GetServicesResponse {
-    #[oai(status = 200)]
-    Ok(Json<Vec<ServiceOut>>),
-
-    #[oai(status = 500)]
-    InternalServerError(Json<ApiError>),
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct ServiceOut {
-    id: Uuid,
-    name: String,
-    description: String,
-    duration_minutes: Option<u32>,
-    price: String,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ApiResponse)]
-pub enum CreateServiceResponse {
+pub enum CreateEmployeeResponse {
     #[oai(status = 201)]
-    Created(Json<CreateServiceOut>),
+    Created(Json<CreateEmployeeOut>),
 
     #[oai(status = 404)]
     NotFound(Json<ApiError>),
@@ -46,6 +28,6 @@ pub enum CreateServiceResponse {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Object)]
-pub struct CreateServiceOut {
+pub struct CreateEmployeeOut {
     pub id: Uuid,
 }
