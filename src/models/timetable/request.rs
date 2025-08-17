@@ -11,6 +11,12 @@ pub struct CreateTimetableRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct UpdateTimetableRequest {
+    pub recurrence_cycle_start: Option<NaiveDate>,
+    pub schedule_days: Option<Vec<ScheduleDayIn>>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct CreateDayRedefinitionRequest {
     pub master_id: Uuid,
     pub date: NaiveDate,

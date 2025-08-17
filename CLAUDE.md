@@ -118,10 +118,39 @@ The codebase uses `yare` for parameterized testing. Key practices:
 - `POST /bookings` - Create new booking
 
 ### Admin API (`/api/v1/admin`)
+
+#### Dashboard
 - `GET /dashboard/{organization_id}` - Get organization dashboard
+
+#### Branches CRUD
+- `GET /branches?organization_id={id}` - List all branches for an organization
+- `GET /branches/{branch_id}` - Get specific branch details
 - `POST /branches` - Create new branch
+- `PUT /branches/{branch_id}` - Update branch (supports partial updates)
+- `DELETE /branches/{branch_id}` - Delete branch
+
+#### Employees CRUD
+- `GET /employees?organization_id={id}` - List all employees for an organization
+- `GET /employees/{employee_id}` - Get specific employee details
 - `POST /employees` - Create new employee
+- `PUT /employees/{employee_id}` - Update employee (supports partial updates)
+- `DELETE /employees/{employee_id}` - Delete employee
+
+#### Services CRUD
+- `GET /services?organization_id={id}` - List all services for an organization
+- `GET /services/{service_id}` - Get specific service details
 - `POST /services` - Create new service
+- `PUT /services/{service_id}` - Update service (supports partial updates)
+- `DELETE /services/{service_id}` - Delete service
+
+#### Timetables & Schedules
+- `GET /timetables?organization_id={id}` - List all timetables for an organization
+- `GET /timetable/{master_id}` - Get timetable with schedule days and redefinitions
+- `POST /timetable` - Create new timetable
+- `PUT /timetable/{master_id}` - Update timetable
+- `DELETE /timetable/{master_id}` - Delete timetable
+- `POST /timetable/redefinitions` - Create day redefinition
+- `DELETE /timetable/redefinitions/{master_id}/{date}` - Delete day redefinition
 
 ## Key Dependencies
 
@@ -190,6 +219,10 @@ curl http://localhost:3222/api/v1/openapi.json  # Get OpenAPI spec
 - **Validation Layer**: garde validators with custom ValidationExt trait
 - **Router Architecture**: utoipa-axum OpenApiRouter for automatic OpenAPI generation
 - **State Management**: Arc<AppState> for shared application state
+- **Partial Updates**: Update endpoints use `Option<Option<T>>` pattern for nullable fields:
+  - `None` (field omitted) → keep existing value
+  - `Some(None)` (field explicitly null) → clear the value
+  - `Some(Some(value))` → update to new value
 
 ### Data Modeling Decisions
 - **Multi-Tenancy**: Organization-based data isolation

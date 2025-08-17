@@ -39,3 +39,29 @@ pub struct CreateEmployeeRequest {
     #[schema(example = true)]
     pub is_master: bool,
 }
+
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct UpdateEmployeeRequest {
+    #[schema(example = "+1234567890")]
+    pub phone: Option<String>,
+
+    #[schema(example = "John")]
+    pub first_name: Option<String>,
+
+    #[schema(example = "Doe")]
+    pub last_name: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = true, example = "Smith")]
+    /// Patronymic. Send null to clear, omit to keep unchanged
+    pub patronymic: Option<Option<String>>,
+
+    #[schema(example = false)]
+    pub is_owner: Option<bool>,
+
+    #[schema(example = false)]
+    pub is_manager: Option<bool>,
+
+    #[schema(example = true)]
+    pub is_master: Option<bool>,
+}

@@ -17,6 +17,23 @@ pub struct CreateBranchRequest {
     pub organization_id: Uuid,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct UpdateBranchRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub timezone: Option<String>,
+    pub street: Option<String>,
+    pub house_number: Option<String>,
+    pub apartment_number: Option<String>,
+    pub city: Option<String>,
+    pub region: Option<String>,
+    pub country: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = true)]
+    /// Address info. Send null to clear, omit to keep unchanged
+    pub address_info: Option<Option<String>>,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct GetBranchesQuery {
     pub organization_name: Uuid,

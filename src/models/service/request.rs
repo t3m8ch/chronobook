@@ -11,6 +11,21 @@ pub struct CreateServiceRequest {
     pub master_id: Option<Uuid>,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct UpdateServiceRequest {
+    pub display_name: Option<String>,
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = true)]
+    /// Duration in minutes. Send null to clear, omit to keep unchanged
+    pub duration_minutes: Option<Option<i32>>,
+    pub price: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = true)]
+    /// Master ID. Send null to clear, omit to keep unchanged
+    pub master_id: Option<Option<Uuid>>,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct GetServicesQuery {
     pub organization_name: String,
