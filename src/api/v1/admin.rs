@@ -1,6 +1,7 @@
 use axum::{
     Json,
     extract::{Path, State},
+    http::StatusCode,
 };
 use std::sync::Arc;
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -14,6 +15,7 @@ use crate::{
         employee::{request::CreateEmployeeRequest, response::CreateEmployeeOut},
         error::ApiError,
         service::{request::CreateServiceRequest, response::CreateServiceOut},
+        timetable::request::{CreateDayRedefinitionRequest, CreateTimetableRequest},
     },
 };
 
@@ -23,6 +25,8 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
         .routes(routes!(create_branch))
         .routes(routes!(create_employee))
         .routes(routes!(create_service))
+        .routes(routes!(create_timetable))
+        .routes(routes!(create_day_redefinition))
 }
 
 #[utoipa::path(
@@ -120,5 +124,53 @@ pub async fn create_service(
     Json(request): Json<CreateServiceRequest>,
 ) -> Result<Json<CreateServiceOut>, ApiError> {
     // TODO: Implement create service logic
+    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+}
+
+#[utoipa::path(
+    post,
+    path = "/timetable",
+    request_body = CreateTimetableRequest,
+    responses(
+        (status = 204, description = "Timetable created"),
+        (status = 404, description = "Master not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 400, description = "Invalid token", body = ApiError),
+        (status = 400, description = "Token expired", body = ApiError),
+        (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    tag = "admin"
+)]
+#[tracing::instrument]
+pub async fn create_timetable(
+    State(_state): State<Arc<AppState>>,
+    Json(request): Json<CreateTimetableRequest>,
+) -> Result<StatusCode, ApiError> {
+    // TODO: Implement create timetable logic
+    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+}
+
+#[utoipa::path(
+    post,
+    path = "/timetable/redefinitions",
+    request_body = CreateDayRedefinitionRequest,
+    responses(
+        (status = 204, description = "Day redefinition created"),
+        (status = 404, description = "Master not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 400, description = "Invalid token", body = ApiError),
+        (status = 400, description = "Token expired", body = ApiError),
+        (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    tag = "admin"
+)]
+#[tracing::instrument]
+pub async fn create_day_redefinition(
+    State(_state): State<Arc<AppState>>,
+    Json(request): Json<CreateDayRedefinitionRequest>,
+) -> Result<StatusCode, ApiError> {
+    // TODO: Implement create day redefinition logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
 }
