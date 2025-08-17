@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::models::{branch::response::BranchOut, master::response::MasterOut};
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateBookingRequest {
     #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
     pub service_id: Uuid,

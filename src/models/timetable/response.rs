@@ -7,11 +7,13 @@ use uuid::Uuid;
 use crate::models::{branch::response::BranchOut, master::response::MasterOut};
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateTimetableOut {
     pub master_id: Uuid,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct TimetableOut {
     pub master_id: Uuid,
     pub recurrence_cycle_start: NaiveDate,
@@ -19,6 +21,7 @@ pub struct TimetableOut {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct ScheduleDayOut {
     pub master_id: Uuid,
     pub day_ordinal: i32,
@@ -26,6 +29,7 @@ pub struct ScheduleDayOut {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct DayRedefinitionOut {
     pub master_id: Uuid,
     pub date: NaiveDate,
@@ -33,6 +37,7 @@ pub struct DayRedefinitionOut {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct WindowOut {
     pub id: Uuid,
     pub slots: Vec<(DateTime<Utc>, DateTime<Utc>)>,

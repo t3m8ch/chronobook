@@ -3,6 +3,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateBranchRequest {
     pub name: String,
     pub description: String,
@@ -18,6 +19,7 @@ pub struct CreateBranchRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateBranchRequest {
     pub name: Option<String>,
     pub description: Option<String>,
@@ -35,6 +37,7 @@ pub struct UpdateBranchRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetBranchesQuery {
     pub organization_name: Uuid,
     #[serde(default)]

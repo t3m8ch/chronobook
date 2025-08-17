@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate, ToSchema)]
+#[serde(rename_all = "camelCase")]
 #[garde(context(()))]
 pub struct PhoneLoginRequest {
     #[garde(custom(validate_phone))]
@@ -12,6 +13,7 @@ pub struct PhoneLoginRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate, ToSchema)]
+#[serde(rename_all = "camelCase")]
 #[garde(context(()))]
 pub struct PhoneVerifyRequest {
     #[garde(custom(validate_phone))]
@@ -24,6 +26,7 @@ pub struct PhoneVerifyRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate, ToSchema)]
+#[serde(rename_all = "camelCase")]
 #[garde(context(()))]
 pub struct UpdateProfileRequest {
     #[garde(length(min = 1, max = 100))]
@@ -40,12 +43,14 @@ pub struct UpdateProfileRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct RefreshTokenRequest {
     #[schema(example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
     pub refresh_token: String,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct TelegramAuthRequest {
     #[schema(example = 123456789)]
     pub telegram_id: i64,

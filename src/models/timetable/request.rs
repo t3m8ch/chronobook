@@ -4,6 +4,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateTimetableRequest {
     pub master_id: Uuid,
     pub recurrence_cycle_start: NaiveDate,
@@ -11,12 +12,14 @@ pub struct CreateTimetableRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateTimetableRequest {
     pub recurrence_cycle_start: Option<NaiveDate>,
     pub schedule_days: Option<Vec<ScheduleDayIn>>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateDayRedefinitionRequest {
     pub master_id: Uuid,
     pub date: NaiveDate,
@@ -25,6 +28,7 @@ pub struct CreateDayRedefinitionRequest {
 
 // TODO: refactor this
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct ScheduleDayIn {
     pub branch_id: Option<Uuid>,
     pub working_interval: Option<Interval>,
@@ -33,18 +37,21 @@ pub struct ScheduleDayIn {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct Interval {
     pub start: DateTime<Utc>,
     pub end: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum ScheduleDayType {
     Weekday,
     Weekend,
 }
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetWindowsQuery {
     pub organization_name: String,
     pub masters: Vec<Uuid>,

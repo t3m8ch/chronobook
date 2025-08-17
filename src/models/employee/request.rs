@@ -5,6 +5,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate, ToSchema)]
+#[serde(rename_all = "camelCase")]
 #[garde(context(()))]
 pub struct CreateEmployeeRequest {
     #[garde(custom(validate_phone))]
@@ -41,6 +42,7 @@ pub struct CreateEmployeeRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateEmployeeRequest {
     #[schema(example = "+1234567890")]
     pub phone: Option<String>,

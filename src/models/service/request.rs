@@ -3,6 +3,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateServiceRequest {
     pub display_name: String,
     pub description: String,
@@ -12,6 +13,7 @@ pub struct CreateServiceRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateServiceRequest {
     pub display_name: Option<String>,
     pub description: Option<String>,
@@ -27,6 +29,7 @@ pub struct UpdateServiceRequest {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetServicesQuery {
     pub organization_name: String,
 }
