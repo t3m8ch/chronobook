@@ -34,13 +34,27 @@ cargo test -- --nocapture  # Show println! output during tests
 ### Directory Layout
 ```
 /src/
-├── main.rs              # Application entry point with OpenAPI service setup
+├── main.rs              # Application entry point with Axum server and OpenAPI setup
 ├── api/                 # API layer
-│   ├── v1/             # Version 1 endpoints
-│   │   ├── auth.rs     # Customer and employee authentication
-│   │   └── bookings.rs # Booking management endpoints
-│   ├── error.rs        # Centralized error handling (ApiError)
-│   └── validators.rs   # Custom validators (phone validation)
+│   ├── mod.rs          # API module definitions
+│   └── v1/             # Version 1 endpoints
+│       ├── mod.rs      # V1 module definitions
+│       ├── auth.rs     # Authentication endpoints (phone/telegram)
+│       ├── bookings.rs # Booking management endpoints
+│       └── admin.rs    # Admin endpoints (dashboard, CRUD operations)
+├── models/             # Data models and DTOs
+│   ├── mod.rs          # Module definitions
+│   ├── error.rs        # ApiError type definition
+│   ├── validation.rs   # Validation utilities with garde
+│   ├── auth/          # Auth request/response models
+│   ├── booking/       # Booking request/response models
+│   ├── branch/        # Branch request/response models
+│   ├── dashboard/     # Dashboard response models
+│   ├── employee/      # Employee request/response models
+│   ├── master/        # Master response models
+│   ├── organization/  # Organization response models
+│   ├── service/       # Service request/response models
+│   └── timetable/     # Timetable request/response models
 /migrations/            # SQLx database migrations
 /docs/                  # Documentation and specifications
 ```
@@ -58,11 +72,13 @@ cargo test -- --nocapture  # Show println! output during tests
 
 ### Database Schema
 - PostgreSQL with UUID primary keys for all entities
-- JSONB fields for flexible schedule data storage (`schedule_days.day_data`)
-- Enum types for status tracking (booking_status, user_type, auth_method, notify_method)
-- Authentication tables (`auth`, `auth_phone_verification`, `auth_telegram_verification`)
+- JSONB fields for flexible schedule data storage (`schedule_days.day_data`, `day_redefinitions.day_data`)
+- Enum types: `booking_status` (confirmed, cancelled), `notify_method` (sms, telegram)
+- Core tables: organizations, users, user_profiles, branches, employees, services, customers, bookings
+- Schedule tables: timetables, schedule_days, day_redefinitions
+- Authentication tables: phone_verify_codes, telegram_verify_hashes
 - Composite primary keys in schedule tables (master_id + day_ordinal/date)
-- Organization-scoped customer authentication
+- Organization-scoped customer authentication (unique constraint on user_id + organization_id)
 
 ### Time Management
 - All time slots use 15-minute increments for efficient background processing
@@ -86,39 +102,43 @@ The codebase uses `yare` for parameterized testing. Key practices:
 ## API Endpoints
 
 ### Authentication API (`/api/v1/auth`)
-
-**Customer Authentication:**
-- `POST /customer/{organization_name}/login/phone` - Initiate phone login
-- `POST /customer/{organization_name}/verify/phone` - Verify phone code
-- `POST /customer/{organization_name}/login/telegram` - Initiate Telegram login
-- `POST /customer/{organization_name}/verify/telegram` - Verify Telegram auth
-- `POST /customer/{organization_name}/refresh` - Refresh access token
-
-**Employee Authentication:**
-- `POST /employee/login/phone` - Employee phone login
-- `POST /employee/verify/phone` - Employee phone verification
-- `POST /employee/login/telegram` - Employee Telegram login
-- `POST /employee/verify/telegram` - Employee Telegram verification
-- `POST /employee/refresh` - Employee token refresh
+- `POST /login/phone` - Initiate phone login (with organization_name in path)
+- `POST /verify/phone` - Verify phone code (with organization_name in path)
+- `POST /login/telegram` - Initiate Telegram login (with organization_name in path)
+- `POST /verify/telegram` - Verify Telegram auth
+- `POST /refresh` - Refresh access token
 
 ### Bookings API (`/api/v1/bookings`)
-- `GET /services?organization_id=<uuid>` - Get available services for organization
-- `GET /masters?organization_id=<uuid>&branches=<uuid[]>` - Get masters by branches
-- `GET /branches?organization_id=<uuid>&masters=<uuid[]>` - Get branches by masters
+- `GET /organizations/{organization_name}` - Get organization by name
+- `GET /services` - Get available services (query params: organization_id, master_ids[], branch_ids[])
+- `GET /masters` - Get masters (query params: organization_id, branch_ids[])
+- `GET /masters/{master_id}` - Get master by ID
+- `GET /branches` - Get branches (query params: organization_id, master_ids[])
+- `GET /windows` - Get available time windows (query params: organization_id, master_id, service_id, date)
+- `POST /bookings` - Create new booking
+
+### Admin API (`/api/v1/admin`)
+- `GET /dashboard/{organization_id}` - Get organization dashboard
+- `POST /branches` - Create new branch
+- `POST /employees` - Create new employee
+- `POST /services` - Create new service
 
 ## Key Dependencies
 
-- **Runtime**: tokio (async runtime)
-- **Web Framework**: Poem + Poem OpenAPI (REST API with automatic OpenAPI docs)
-- **Database**: sqlx with PostgreSQL (compile-time checked queries)
-- **Time**: chrono for date/time handling
-- **Validation**: Custom validators using derive_more and phonenumber crate
-- **IDs**: uuid for unique identifiers
-- **Builders**: bon for builder pattern
-- **Testing**: yare for parameterized tests
-- **Phone Validation**: phonenumber crate for international phone number validation
-- **Serialization**: serde for JSON handling
-- **Tracing**: Built-in instrumentation for API endpoints
+- **Runtime**: tokio 1.47 (async runtime)
+- **Web Framework**: axum 0.8 (web framework) + utoipa 5.4 (OpenAPI generation)
+- **OpenAPI UI**: utoipa-scalar 0.3 (Scalar UI for API documentation)
+- **Database**: sqlx 0.8 with PostgreSQL (compile-time checked queries)
+- **Time**: chrono 0.4 for date/time handling
+- **Validation**: garde 0.22 for input validation
+- **Error Handling**: anyhow 1.0 for error management
+- **IDs**: uuid 1.18 for unique identifiers
+- **Phone Validation**: phonenumber 0.3 for international phone number validation
+- **Serialization**: serde 1.0 + serde_json for JSON handling
+- **HTTP Middleware**: tower 0.5 + tower-http 0.6 (CORS, tracing)
+- **Tracing**: tracing 0.1 + tracing-subscriber 0.3 for logging
+- **Environment**: dotenv 0.15 for environment variables
+- **Utilities**: derive_more 2.0 for custom derives
 
 ## Business Logic Notes
 
@@ -142,10 +162,12 @@ The codebase uses `yare` for parameterized testing. Key practices:
 ## Application Configuration
 
 ### Server Setup
-- **Host**: Binds to `0.0.0.0:3222`
+- **Host**: Binds to `0.0.0.0:3222` (configurable via SERVER_ADDR env var)
 - **API Base Path**: `/api/v1`
-- **Documentation**: Stoplight Elements UI at `/docs/stoplight`
+- **Documentation**: Scalar UI at `/docs/scalar`
 - **OpenAPI Spec**: Auto-generated and available at `/api/v1/openapi.json`
+- **CORS**: Permissive CORS policy enabled
+- **Tracing**: HTTP request tracing enabled
 
 ### Development Environment
 ```bash
@@ -162,10 +184,12 @@ curl http://localhost:3222/api/v1/openapi.json  # Get OpenAPI spec
 - **Token Management**: Refresh token mechanism for both user types
 
 ### API Design Patterns
-- **Strong Typing**: Custom response enums for each endpoint
+- **Strong Typing**: Separate request/response models for each endpoint
 - **Error Consistency**: Unified `ApiError` structure across all endpoints
-- **OpenAPI First**: Full specification with automatic documentation
-- **Validation Layer**: Custom validators integrated with Poem framework
+- **OpenAPI First**: Full specification with automatic documentation via utoipa
+- **Validation Layer**: garde validators with custom ValidationExt trait
+- **Router Architecture**: utoipa-axum OpenApiRouter for automatic OpenAPI generation
+- **State Management**: Arc<AppState> for shared application state
 
 ### Data Modeling Decisions
 - **Multi-Tenancy**: Organization-based data isolation
