@@ -56,10 +56,10 @@ async fn main() -> Result<(), std::io::Error> {
     let (admin_router, admin_api) = admin::router().split_for_parts();
 
     // Merge all OpenAPI docs
-    let mut api = ApiDoc::openapi();
-    api.merge(auth_api);
-    api.merge(bookings_api);
-    api.merge(admin_api);
+    let api = ApiDoc::openapi()
+        .nest("/api/v1/auth", auth_api)
+        .nest("/api/v1/bookings", bookings_api)
+        .nest("/api/v1/admin", admin_api);
 
     // Build the application with all routes
     let app = Router::new()

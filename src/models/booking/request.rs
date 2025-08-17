@@ -31,21 +31,3 @@ pub enum NotifyMethod {
     Sms,
     Telegram,
 }
-
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
-pub struct WindowOut {
-    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
-    pub id: Uuid,
-    pub slots: Vec<SlotOut>,
-    pub master: MasterOut,
-    pub branch: BranchOut,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
-pub struct SlotOut {
-    #[schema(example = "2024-01-01T10:00:00Z")]
-    pub start_time: DateTime<Utc>,
-
-    #[schema(example = "2024-01-01T11:00:00Z")]
-    pub end_time: DateTime<Utc>,
-}

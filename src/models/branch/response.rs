@@ -4,20 +4,20 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct BranchOut {
-    id: Uuid,
-    name: String,
-    description: String,
-    timezone: String,
-    street: String,
-    house_number: String,
-    apartment_number: String,
-    city: String,
-    region: String,
-    country: String,
-    address_info: Option<String>,
+    pub id: Uuid,
+    pub name: String,
+    pub description: String,
+    pub timezone: String,
+    pub street: String,
+    pub house_number: String,
+    pub apartment_number: String,
+    pub city: String,
+    pub region: String,
+    pub country: String,
+    pub address_info: Option<String>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct CreateBranchOut {
-    id: Uuid,
+    pub id: Uuid,
 }

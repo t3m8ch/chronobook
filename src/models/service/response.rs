@@ -4,11 +4,11 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct ServiceOut {
-    id: Uuid,
-    name: String,
-    description: String,
-    duration_minutes: Option<u32>,
-    price: String,
+    pub id: Uuid,
+    pub name: String,
+    pub description: String,
+    pub duration_minutes: Option<u32>,
+    pub price: String,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]

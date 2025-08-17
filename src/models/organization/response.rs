@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct OrganizationOut {
     pub id: String,
     pub name: String,

@@ -13,5 +13,5 @@ pub struct CreateServiceRequest {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct GetServicesQuery {
-    pub organization_id: Uuid,
+    pub organization_name: String,
 }

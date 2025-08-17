@@ -1,63 +1,43 @@
 use axum::{
     Json,
     extract::{Path, State},
-    response::IntoResponse,
 };
 use std::sync::Arc;
+use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
-use utoipa_axum::{routes, router::OpenApiRouter};
 
 use crate::{
     AppState,
     models::{
-        branch::response::BranchOut,
         branch::{request::CreateBranchRequest, response::CreateBranchOut},
         dashboard::response::OrganizationDashboardOut,
         employee::{request::CreateEmployeeRequest, response::CreateEmployeeOut},
         error::ApiError,
-        master::response::MasterOut,
         service::{request::CreateServiceRequest, response::CreateServiceOut},
     },
 };
 
 pub fn router() -> OpenApiRouter<Arc<AppState>> {
     OpenApiRouter::new()
-        .routes(routes!(create_organization))
         .routes(routes!(get_organization_dashboard))
         .routes(routes!(create_branch))
-        .routes(routes!(get_branches))
-        .routes(routes!(get_masters))
         .routes(routes!(create_employee))
         .routes(routes!(create_service))
 }
 
 #[utoipa::path(
-    post,
-    path = "/api/v1/admin/organizations",
-    responses(
-        (status = 201, description = "Organization created"),
-        (status = 400, description = "Bad request", body = ApiError),
-        (status = 500, description = "Internal server error", body = ApiError)
-    ),
-    tag = "admin"
-)]
-#[tracing::instrument]
-pub async fn create_organization(
-    State(_state): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement create organization logic
-    Ok(())
-}
-
-#[utoipa::path(
     get,
-    path = "/api/v1/admin/dashboard/{organization_id}",
+    path = "/dashboard/{organization_id}",
     params(
         ("organization_id" = Uuid, Path, description = "Organization ID")
     ),
     responses(
         (status = 200, description = "Organization dashboard", body = OrganizationDashboardOut),
         (status = 404, description = "Organization not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 400, description = "Invalid token", body = ApiError),
+        (status = 400, description = "Token expired", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -73,11 +53,15 @@ pub async fn get_organization_dashboard(
 
 #[utoipa::path(
     post,
-    path = "/api/v1/admin/branches",
+    path = "/branches",
     request_body = CreateBranchRequest,
     responses(
         (status = 201, description = "Branch created", body = CreateBranchOut),
-        (status = 400, description = "Bad request", body = ApiError),
+        (status = 404, description = "Organization not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 400, description = "Invalid token", body = ApiError),
+        (status = 400, description = "Token expired", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -92,46 +76,16 @@ pub async fn create_branch(
 }
 
 #[utoipa::path(
-    get,
-    path = "/api/v1/admin/branches",
-    responses(
-        (status = 200, description = "List of branches", body = Vec<BranchOut>),
-        (status = 500, description = "Internal server error", body = ApiError)
-    ),
-    tag = "admin"
-)]
-#[tracing::instrument]
-pub async fn get_branches(
-    State(_state): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement get branches logic
-    Ok(Json(Vec::<BranchOut>::new()))
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/v1/admin/masters",
-    responses(
-        (status = 200, description = "List of masters", body = Vec<MasterOut>),
-        (status = 500, description = "Internal server error", body = ApiError)
-    ),
-    tag = "admin"
-)]
-#[tracing::instrument]
-pub async fn get_masters(
-    State(_state): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement get masters logic
-    Ok(Json(Vec::<MasterOut>::new()))
-}
-
-#[utoipa::path(
     post,
-    path = "/api/v1/admin/employees",
+    path = "/employees",
     request_body = CreateEmployeeRequest,
     responses(
         (status = 201, description = "Employee created", body = CreateEmployeeOut),
-        (status = 400, description = "Bad request", body = ApiError),
+        (status = 404, description = "Organization not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 400, description = "Invalid token", body = ApiError),
+        (status = 400, description = "Token expired", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -147,11 +101,15 @@ pub async fn create_employee(
 
 #[utoipa::path(
     post,
-    path = "/api/v1/admin/services",
+    path = "/services",
     request_body = CreateServiceRequest,
     responses(
         (status = 201, description = "Service created", body = CreateServiceOut),
-        (status = 400, description = "Bad request", body = ApiError),
+        (status = 404, description = "Organization not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 400, description = "Invalid token", body = ApiError),
+        (status = 400, description = "Token expired", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
