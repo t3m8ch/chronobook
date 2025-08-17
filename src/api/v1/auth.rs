@@ -60,8 +60,7 @@ pub async fn login_phone(
     request_body = PhoneVerifyRequest,
     responses(
         (status = 200, description = "Verification successful", body = AccessToken),
-        (status = 400, description = "Invalid code", body = ApiError),
-        (status = 400, description = "Code expired", body = ApiError),
+        (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "auth"
@@ -132,8 +131,7 @@ pub async fn verify_telegram(
     request_body = RefreshTokenRequest,
     responses(
         (status = 200, description = "Token refreshed", body = AccessToken),
-        (status = 400, description = "Invalid token", body = ApiError),
-        (status = 400, description = "Token expired", body = ApiError),
+        (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "auth"

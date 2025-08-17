@@ -171,8 +171,7 @@ async fn get_windows(
         (status = 201, description = "Booking created", body = Vec<BookingOut>),
         (status = 404, description = "Service, branch or master not found", body = Vec<ApiError>),
         (status = 409, description = "Already booked", body = Vec<ApiError>),
-        (status = 400, description = "Invalid token", body = ApiError),
-        (status = 400, description = "Token expired", body = ApiError),
+        (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     )
 )]

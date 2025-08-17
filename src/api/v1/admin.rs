@@ -40,8 +40,7 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
         (status = 404, description = "Organization not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
         (status = 403, description = "Forbidden", body = ApiError),
-        (status = 400, description = "Invalid token", body = ApiError),
-        (status = 400, description = "Token expired", body = ApiError),
+        (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -64,8 +63,7 @@ pub async fn get_organization_dashboard(
         (status = 404, description = "Organization not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
         (status = 403, description = "Forbidden", body = ApiError),
-        (status = 400, description = "Invalid token", body = ApiError),
-        (status = 400, description = "Token expired", body = ApiError),
+        (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -88,8 +86,7 @@ pub async fn create_branch(
         (status = 404, description = "Organization not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
         (status = 403, description = "Forbidden", body = ApiError),
-        (status = 400, description = "Invalid token", body = ApiError),
-        (status = 400, description = "Token expired", body = ApiError),
+        (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -112,8 +109,7 @@ pub async fn create_employee(
         (status = 404, description = "Organization not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
         (status = 403, description = "Forbidden", body = ApiError),
-        (status = 400, description = "Invalid token", body = ApiError),
-        (status = 400, description = "Token expired", body = ApiError),
+        (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -136,8 +132,7 @@ pub async fn create_service(
         (status = 404, description = "Master not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
         (status = 403, description = "Forbidden", body = ApiError),
-        (status = 400, description = "Invalid token", body = ApiError),
-        (status = 400, description = "Token expired", body = ApiError),
+        (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -160,8 +155,7 @@ pub async fn create_timetable(
         (status = 404, description = "Master not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
         (status = 403, description = "Forbidden", body = ApiError),
-        (status = 400, description = "Invalid token", body = ApiError),
-        (status = 400, description = "Token expired", body = ApiError),
+        (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
