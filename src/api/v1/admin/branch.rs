@@ -37,9 +37,12 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
         (status = 201, description = "Branch created", body = CreateBranchOut),
         (status = 404, description = "Organization not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root or Owner (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -61,9 +64,12 @@ pub async fn create_branch(
     responses(
         (status = 200, description = "List of branches", body = Vec<BranchOut>),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (organization), or Master (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -86,9 +92,12 @@ pub async fn list_branches(
         (status = 200, description = "Branch details", body = BranchOut),
         (status = 404, description = "Branch not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (branch), or Master (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -112,9 +121,12 @@ pub async fn get_branch(
         (status = 200, description = "Branch updated", body = BranchOut),
         (status = 404, description = "Branch not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -138,9 +150,12 @@ pub async fn update_branch(
         (status = 204, description = "Branch deleted"),
         (status = 404, description = "Branch not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root or Owner (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]

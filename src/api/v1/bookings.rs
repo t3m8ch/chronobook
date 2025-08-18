@@ -169,10 +169,14 @@ async fn get_windows(
     request_body = CreateBookingRequest,
     responses(
         (status = 201, description = "Booking created", body = Vec<BookingOut>),
+        (status = 401, description = "Unauthorized - Authentication required", body = ApiError),
         (status = 404, description = "Service, branch or master not found", body = Vec<ApiError>),
         (status = 409, description = "Already booked", body = Vec<ApiError>),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "bookings"
 )]

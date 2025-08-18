@@ -45,9 +45,12 @@ pub struct ListQuery {
         (status = 200, description = "Organization dashboard", body = OrganizationDashboardOut),
         (status = 404, description = "Organization not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (organization), or Master (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]

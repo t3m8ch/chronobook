@@ -51,9 +51,12 @@ pub struct TimetableWithRedefinitionsOut {
         (status = 204, description = "Timetable created"),
         (status = 404, description = "Master not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (branch), or Master (own schedule) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -75,9 +78,12 @@ pub async fn create_timetable(
     responses(
         (status = 200, description = "List of timetables", body = Vec<TimetableOut>),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (organization), or Master (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -100,9 +106,12 @@ pub async fn list_timetables(
         (status = 200, description = "Timetable with schedule days and redefinitions", body = TimetableWithRedefinitionsOut),
         (status = 404, description = "Timetable not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (branch), or Master (own schedule) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -126,9 +135,12 @@ pub async fn get_timetable_with_redefinitions(
         (status = 200, description = "Timetable updated", body = TimetableOut),
         (status = 404, description = "Timetable not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (branch), or Master (own schedule) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -152,9 +164,12 @@ pub async fn update_timetable(
         (status = 204, description = "Timetable deleted"),
         (status = 404, description = "Timetable not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -175,9 +190,12 @@ pub async fn delete_timetable(
         (status = 204, description = "Day redefinition created"),
         (status = 404, description = "Master not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (branch), or Master (own schedule) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -201,9 +219,12 @@ pub async fn create_day_redefinition(
         (status = 204, description = "Day redefinition deleted"),
         (status = 404, description = "Day redefinition not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (branch), or Master (own schedule) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]

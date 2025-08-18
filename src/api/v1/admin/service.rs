@@ -32,12 +32,13 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
 #[utoipa::path(
     post,
     path = "/services",
+    security(("bearerAuth" = [])),
     request_body = CreateServiceRequest,
     responses(
         (status = 201, description = "Service created", body = CreateServiceOut),
         (status = 404, description = "Organization not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
@@ -55,13 +56,14 @@ pub async fn create_service(
 #[utoipa::path(
     get,
     path = "/services",
+    security(("bearerAuth" = [])),
     params(
         ListQuery
     ),
     responses(
         (status = 200, description = "List of services", body = Vec<ServiceOut>),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root, Owner (organization), Manager (organization), or Master (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
@@ -79,6 +81,7 @@ pub async fn list_services(
 #[utoipa::path(
     get,
     path = "/services/{service_id}",
+    security(("bearerAuth" = [])),
     params(
         ("service_id" = Uuid, Path, description = "Service ID")
     ),
@@ -86,7 +89,7 @@ pub async fn list_services(
         (status = 200, description = "Service details", body = ServiceOut),
         (status = 404, description = "Service not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root, Owner (organization), Manager (organization), or Master (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
@@ -104,6 +107,7 @@ pub async fn get_service(
 #[utoipa::path(
     put,
     path = "/services/{service_id}",
+    security(("bearerAuth" = [])),
     params(
         ("service_id" = Uuid, Path, description = "Service ID")
     ),
@@ -112,7 +116,7 @@ pub async fn get_service(
         (status = 200, description = "Service updated", body = ServiceOut),
         (status = 404, description = "Service not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
@@ -131,6 +135,7 @@ pub async fn update_service(
 #[utoipa::path(
     delete,
     path = "/services/{service_id}",
+    security(("bearerAuth" = [])),
     params(
         ("service_id" = Uuid, Path, description = "Service ID")
     ),
@@ -138,7 +143,7 @@ pub async fn update_service(
         (status = 204, description = "Service deleted"),
         (status = 404, description = "Service not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),

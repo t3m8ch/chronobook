@@ -39,12 +39,15 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
 #[utoipa::path(
     get,
     path = "/branches/{branch_id}/notification-settings",
+    security(("bearerAuth" = [])),
     params(
         ("branch_id" = Uuid, Path, description = "Branch ID")
     ),
     responses(
         (status = 200, description = "Notification settings retrieved", body = NotificationSettingsResponse),
         (status = 404, description = "Branch not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -60,11 +63,14 @@ pub async fn get_notification_settings(
 #[utoipa::path(
     put,
     path = "/notification-settings",
+    security(("bearerAuth" = [])),
     request_body = UpdateNotificationSettingsRequest,
     responses(
         (status = 200, description = "Notification settings updated", body = NotificationSettingsResponse),
         (status = 400, description = "Invalid request", body = ApiError),
         (status = 404, description = "Branch not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -81,12 +87,15 @@ pub async fn update_notification_settings(
 #[utoipa::path(
     get,
     path = "/branches/{branch_id}/notification-templates",
+    security(("bearerAuth" = [])),
     params(
         ("branch_id" = Uuid, Path, description = "Branch ID")
     ),
     responses(
         (status = 200, description = "Notification templates retrieved", body = Vec<NotificationTemplateResponse>),
         (status = 404, description = "Branch not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -102,12 +111,15 @@ pub async fn get_notification_templates(
 #[utoipa::path(
     post,
     path = "/notification-templates",
+    security(("bearerAuth" = [])),
     request_body = CreateNotificationTemplateRequest,
     responses(
         (status = 201, description = "Notification template created", body = NotificationTemplateResponse),
         (status = 400, description = "Invalid request", body = ApiError),
         (status = 404, description = "Branch not found", body = ApiError),
         (status = 409, description = "Template already exists", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -124,6 +136,7 @@ pub async fn create_notification_template(
 #[utoipa::path(
     get,
     path = "/branches/{branch_id}/notification-templates/{template_id}",
+    security(("bearerAuth" = [])),
     params(
         ("branch_id" = Uuid, Path, description = "Branch ID"),
         ("template_id" = Uuid, Path, description = "Template ID")
@@ -131,6 +144,8 @@ pub async fn create_notification_template(
     responses(
         (status = 200, description = "Notification template retrieved", body = NotificationTemplateResponse),
         (status = 404, description = "Template not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -146,11 +161,14 @@ pub async fn get_notification_template(
 #[utoipa::path(
     put,
     path = "/notification-templates",
+    security(("bearerAuth" = [])),
     request_body = UpdateNotificationTemplateRequest,
     responses(
         (status = 200, description = "Notification template updated", body = NotificationTemplateResponse),
         (status = 400, description = "Invalid request", body = ApiError),
         (status = 404, description = "Template not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -167,10 +185,13 @@ pub async fn update_notification_template(
 #[utoipa::path(
     delete,
     path = "/notification-templates",
+    security(("bearerAuth" = [])),
     request_body = DeleteNotificationTemplateRequest,
     responses(
         (status = 204, description = "Notification template deleted"),
         (status = 404, description = "Template not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -187,11 +208,14 @@ pub async fn delete_notification_template(
 #[utoipa::path(
     post,
     path = "/send-bulk-notification",
+    security(("bearerAuth" = [])),
     request_body = SendBulkNotificationRequest,
     responses(
         (status = 200, description = "Bulk notification sent", body = BulkNotificationResponse),
         (status = 400, description = "Invalid request", body = ApiError),
         (status = 404, description = "Branch not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -208,12 +232,15 @@ pub async fn send_bulk_notification(
 #[utoipa::path(
     get,
     path = "/branches/{branch_id}/scheduled-notifications",
+    security(("bearerAuth" = [])),
     params(
         ("branch_id" = Uuid, Path, description = "Branch ID")
     ),
     responses(
         (status = 200, description = "Scheduled notifications retrieved", body = Vec<ScheduledNotificationResponse>),
         (status = 404, description = "Branch not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"
@@ -229,12 +256,15 @@ pub async fn get_scheduled_notifications(
 #[utoipa::path(
     get,
     path = "/bookings/{booking_id}/notifications",
+    security(("bearerAuth" = [])),
     params(
         ("booking_id" = Uuid, Path, description = "Booking ID")
     ),
     responses(
         (status = 200, description = "Booking notifications retrieved", body = Vec<ScheduledNotificationResponse>),
         (status = 404, description = "Booking not found", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 403, description = "Forbidden - requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "admin"

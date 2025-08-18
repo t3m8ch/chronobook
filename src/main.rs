@@ -4,7 +4,9 @@ use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
+use utoipa::Modify;
 use utoipa::OpenApi;
+use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa_scalar::{Scalar, Servable};
 
 use crate::api::v1::{admin, auth, bookings};
@@ -17,17 +19,35 @@ pub struct AppState {
     // Add your shared state here (e.g., database pool)
 }
 
+struct SecurityAddon;
+
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        let components = openapi.components.as_mut().unwrap();
+        components.add_security_scheme(
+            "bearerAuth",
+            SecurityScheme::Http(
+                HttpBuilder::new()
+                    .scheme(HttpAuthScheme::Bearer)
+                    .bearer_format("JWT")
+                    .build(),
+            ),
+        );
+    }
+}
+
 #[derive(OpenApi)]
 #[openapi(
+    modifiers(&SecurityAddon),
     tags(
         (name = "auth", description = "Authentication endpoints"),
-        (name = "bookings", description = "Booking management endpoints"),
-        (name = "admin", description = "Admin endpoints"),
+        (name = "bookings", description = "Booking management endpoints - GET endpoints are public, POST endpoints require authentication"),
+        (name = "admin", description = "Admin endpoints - Access controlled by user roles: Root (all access), Owner (organization scope), Manager (branch scope), Master (own schedule and customers)"),
     ),
     info(
         title = "Chronobook API",
         version = "1.0.0",
-        description = "Booking management system for beauty salons",
+        description = "Booking management system for beauty salons\n\n## Access Control\n\nThe API uses role-based access control with the following roles:\n\n- **Root**: System-wide administrator with full access to all resources\n- **Owner**: Organization administrator with full access to organization resources (branches, employees, services, notifications)\n- **Manager**: Branch administrator with access to branch-specific resources and can manage branch notifications\n- **Master**: Service provider who can edit own schedule, manage own customers, and view organization data\n\n### Authorization Header\n\nAll protected endpoints require a Bearer token in the Authorization header:\n```\nAuthorization: Bearer <JWT_TOKEN>\n```",
         contact(
             name = "Chronobook Support",
             email = "support@chronobook.com"

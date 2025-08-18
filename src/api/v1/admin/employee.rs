@@ -37,9 +37,12 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
         (status = 201, description = "Employee created", body = CreateEmployeeOut),
         (status = 404, description = "Organization not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root or Owner (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -61,9 +64,12 @@ pub async fn create_employee(
     responses(
         (status = 200, description = "List of employees", body = Vec<EmployeeOut>),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (organization), or Master (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -86,9 +92,12 @@ pub async fn list_employees(
         (status = 200, description = "Employee details", body = EmployeeOut),
         (status = 404, description = "Employee not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root, Owner (organization), Manager (organization), or Master (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -112,9 +121,12 @@ pub async fn get_employee(
         (status = 200, description = "Employee updated", body = EmployeeOut),
         (status = 404, description = "Employee not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root or Owner (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
@@ -138,9 +150,12 @@ pub async fn update_employee(
         (status = 204, description = "Employee deleted"),
         (status = 404, description = "Employee not found", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
-        (status = 403, description = "Forbidden", body = ApiError),
+        (status = 403, description = "Forbidden - Requires Root or Owner (organization) role", body = ApiError),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearerAuth" = [])
     ),
     tag = "admin"
 )]
