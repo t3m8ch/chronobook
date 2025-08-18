@@ -45,7 +45,7 @@ pub struct TimetableWithRedefinitionsOut {
 
 #[utoipa::path(
     post,
-    path = "/timetable",
+    path = "/timetables",
     request_body = CreateTimetableRequest,
     responses(
         (status = 204, description = "Timetable created"),
@@ -92,7 +92,7 @@ pub async fn list_timetables(
 
 #[utoipa::path(
     get,
-    path = "/timetable/{master_id}",
+    path = "/timetables/{master_id}",
     params(
         ("master_id" = Uuid, Path, description = "Master ID")
     ),
@@ -117,7 +117,7 @@ pub async fn get_timetable_with_redefinitions(
 
 #[utoipa::path(
     put,
-    path = "/timetable/{master_id}",
+    path = "/timetables/{master_id}",
     params(
         ("master_id" = Uuid, Path, description = "Master ID")
     ),
@@ -144,7 +144,7 @@ pub async fn update_timetable(
 
 #[utoipa::path(
     delete,
-    path = "/timetable/{master_id}",
+    path = "/timetables/{master_id}",
     params(
         ("master_id" = Uuid, Path, description = "Master ID")
     ),
@@ -169,7 +169,7 @@ pub async fn delete_timetable(
 
 #[utoipa::path(
     post,
-    path = "/timetable/redefinitions",
+    path = "/timetables/redefinitions",
     request_body = CreateDayRedefinitionRequest,
     responses(
         (status = 204, description = "Day redefinition created"),
@@ -192,7 +192,7 @@ pub async fn create_day_redefinition(
 
 #[utoipa::path(
     delete,
-    path = "/timetable/redefinitions/{master_id}/{date}",
+    path = "/timetables/redefinitions/{master_id}/{date}",
     params(
         ("master_id" = Uuid, Path, description = "Master ID"),
         ("date" = NaiveDate, Path, description = "Date of the redefinition")
