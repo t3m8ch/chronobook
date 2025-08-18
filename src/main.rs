@@ -1,4 +1,6 @@
 use axum::Router;
+use axum_extra::extract::cookie::SameSite;
+use chrono::Duration;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
@@ -27,6 +29,17 @@ mod services;
 #[derive(Clone)]
 pub struct AppState {
     pub auth_service: Arc<dyn AuthService>,
+    pub jwt_cookie_settings: JwtCookieSettings,
+}
+
+#[derive(Clone, Debug)]
+pub struct JwtCookieSettings {
+    pub cookie_name: String,
+    pub http_only: bool,
+    pub secure: bool,
+    pub same_site: SameSite,
+    pub max_age: chrono::Duration,
+    pub path: String,
 }
 
 struct SecurityAddon;
@@ -119,6 +132,14 @@ async fn main() -> anyhow::Result<()> {
             telegram_provider.clone(),
             jwt_manager.clone(),
         )),
+        jwt_cookie_settings: JwtCookieSettings {
+            cookie_name: "refresh_token".to_string(),
+            http_only: true,
+            secure: true,
+            same_site: SameSite::Strict,
+            max_age: Duration::days(7),
+            path: "/".to_string(),
+        },
     });
 
     // Build the routers with OpenApiRouter

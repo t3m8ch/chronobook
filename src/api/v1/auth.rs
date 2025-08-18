@@ -1,11 +1,10 @@
 use axum::{Json, extract::State, response::IntoResponse};
-use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
+use axum_extra::extract::cookie::{Cookie, CookieJar};
 use std::sync::Arc;
-use time::Duration;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
-    AppState,
+    AppState, JwtCookieSettings,
     models::{
         auth::{
             request::{PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest},
@@ -42,9 +41,7 @@ pub async fn login_phone(
     Json(request): Json<PhoneLoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     request.validate_ext()?;
-
     let result = state.auth_service.login_phone(&request).await?;
-
     Ok(Json(result))
 }
 
@@ -66,18 +63,8 @@ pub async fn verify_phone(
     Json(request): Json<PhoneVerifyRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     request.validate_ext()?;
-
     let (access_token, refresh_token) = state.auth_service.verify_phone(&request).await?;
-
-    // Create HTTP-only cookie for refresh token
-    let refresh_cookie = Cookie::build(("refresh_token", refresh_token))
-        .http_only(true)
-        .secure(true)
-        .same_site(SameSite::Strict)
-        .path("/")
-        .max_age(Duration::days(7))
-        .build();
-
+    let refresh_cookie = token_cookie(&state.jwt_cookie_settings, refresh_token);
     Ok((jar.add(refresh_cookie), Json(AccessToken { access_token })))
 }
 
@@ -118,16 +105,7 @@ pub async fn verify_telegram(
     Json(request): Json<TelegramAuthRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let (access_token, refresh_token) = state.auth_service.verify_telegram(&request).await?;
-
-    // Create HTTP-only cookie for refresh token
-    let refresh_cookie = Cookie::build(("refresh_token", refresh_token))
-        .http_only(true)
-        .secure(true)
-        .same_site(SameSite::Strict)
-        .path("/")
-        .max_age(Duration::days(7))
-        .build();
-
+    let refresh_cookie = token_cookie(&state.jwt_cookie_settings, refresh_token);
     Ok((jar.add(refresh_cookie), Json(AccessToken { access_token })))
 }
 
@@ -153,15 +131,23 @@ pub async fn refresh(
         .value();
 
     let (access_token, new_refresh_token) = state.auth_service.refresh_token(refresh_token).await?;
-
-    // Create new HTTP-only cookie for refresh token
-    let refresh_cookie = Cookie::build(("refresh_token", new_refresh_token))
-        .http_only(true)
-        .secure(true)
-        .same_site(SameSite::Strict)
-        .path("/")
-        .max_age(Duration::days(7))
-        .build();
-
+    let refresh_cookie = token_cookie(&state.jwt_cookie_settings, new_refresh_token);
     Ok((jar.add(refresh_cookie), Json(AccessToken { access_token })))
+}
+
+fn token_cookie<'a>(settings: &JwtCookieSettings, token: String) -> Cookie<'a> {
+    Cookie::build((settings.cookie_name.clone(), token))
+        .http_only(settings.http_only)
+        .secure(settings.secure)
+        .same_site(settings.same_site)
+        .path(settings.path.clone())
+        .max_age(chrono_duration_to_time(settings.max_age))
+        .build()
+}
+
+fn chrono_duration_to_time(duration: chrono::Duration) -> time::Duration {
+    time::Duration::new(
+        duration.num_seconds() as i64,
+        duration.num_nanoseconds().unwrap_or(0) as i32,
+    )
 }
