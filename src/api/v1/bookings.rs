@@ -173,7 +173,8 @@ async fn get_windows(
         (status = 409, description = "Already booked", body = Vec<ApiError>),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
-    )
+    ),
+    tag = "bookings"
 )]
 async fn create_booking(
     State(_state): State<Arc<AppState>>,
