@@ -1,6 +1,5 @@
 use axum::Router;
 use chrono::Duration;
-use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
@@ -12,6 +11,7 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa_scalar::{Scalar, Servable};
 
 use crate::api::v1::{admin, auth, bookings};
+use crate::config::Config;
 use crate::repositories::auth::PgAuthRepository;
 use crate::services::auth::AuthServiceImpl;
 use crate::services::jwt::JwtManager;
@@ -19,6 +19,7 @@ use crate::services::providers::MockSmsProvider;
 use crate::services::providers::MockTelegramProvider;
 
 mod api;
+mod config;
 mod models;
 mod repositories;
 mod services;
@@ -67,13 +68,11 @@ struct ApiDoc;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dotenv().ok();
+    let config = Config::from_env()?;
 
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .init();
-
-    let server_addr = std::env::var("SERVER_ADDR").unwrap_or("0.0.0.0:3222".to_string());
 
     let sms_provider = Arc::new({
         let mut sms_provider = MockSmsProvider::new();
@@ -101,30 +100,16 @@ async fn main() -> anyhow::Result<()> {
 
     let jwt_manager = Arc::new(
         JwtManager::builder()
-            .access_secret(
-                std::env::var("JWT_ACCESS_SECRET").expect("JWT_ACCESS_SECRET must be set"),
-            )
-            .refresh_secret(
-                std::env::var("JWT_REFRESH_SECRET").expect("JWT_REFRESH_SECRET must be set"),
-            )
-            .access_duration(Duration::minutes(
-                std::env::var("JWT_ACCESS_EXPIRATION_MINUTES")
-                    .unwrap_or("15".to_string())
-                    .parse()
-                    .expect("JWT_ACCESS_EXPIRATION must be a valid number"),
-            ))
-            .refresh_duration(Duration::days(
-                std::env::var("JWT_REFRESH_EXPIRATION_DAYS")
-                    .unwrap_or("7".to_string())
-                    .parse()
-                    .expect("JWT_REFRESH_EXPIRATION must be a valid number"),
-            ))
+            .access_secret(config.jwt_access_secret)
+            .refresh_secret(config.jwt_refresh_secret)
+            .access_duration(config.jwt_access_duration)
+            .refresh_duration(config.jwt_refresh_duration)
             .build(),
     );
 
     let pg_pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
+        .connect(&config.database_url)
         .await?;
 
     let state = Arc::new(AppState {
@@ -166,13 +151,16 @@ async fn main() -> anyhow::Result<()> {
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http());
 
-    let listener = tokio::net::TcpListener::bind(&server_addr).await?;
+    let listener = tokio::net::TcpListener::bind(&config.server_addr).await?;
 
-    tracing::info!("🚀 Server running at http://{}", server_addr);
-    tracing::info!("📚 API documentation at http://{}/docs/scalar", server_addr);
+    tracing::info!("🚀 Server running at http://{}", config.server_addr);
+    tracing::info!(
+        "📚 API documentation at http://{}/docs/scalar",
+        config.server_addr
+    );
     tracing::info!(
         "📋 OpenAPI spec at http://{}/api/v1/openapi.json",
-        server_addr
+        config.server_addr
     );
 
     axum::serve(listener, app).await?;
