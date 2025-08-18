@@ -104,59 +104,6 @@ The codebase uses `yare` for parameterized testing. Key practices:
 
 3. **Test Organization**: Tests live in `#[cfg(test)]` modules within implementation files
 
-## API Endpoints
-
-### Authentication API (`/api/v1/auth`)
-- `POST /login/phone` - Initiate phone login (with organization_name in path)
-- `POST /verify/phone` - Verify phone code (with organization_name in path)
-- `POST /login/telegram` - Initiate Telegram login (with organization_name in path)
-- `POST /verify/telegram` - Verify Telegram auth
-- `POST /refresh` - Refresh access token
-
-### Bookings API (`/api/v1/bookings`)
-- `GET /organizations/{organization_name}` - Get organization by name
-- `GET /services` - Get available services (query params: organization_id, master_ids[], branch_ids[])
-- `GET /masters` - Get masters (query params: organization_id, branch_ids[])
-- `GET /masters/{master_id}` - Get master by ID
-- `GET /branches` - Get branches (query params: organization_id, master_ids[])
-- `GET /windows` - Get available time windows (query params: organization_id, master_id, service_id, date)
-- `POST /bookings` - Create new booking
-
-### Admin API (`/api/v1/admin`)
-
-#### Dashboard
-- `GET /dashboard/{organization_id}` - Get organization dashboard
-
-#### Branches CRUD
-- `GET /branches?organization_id={id}` - List all branches for an organization
-- `GET /branches/{branch_id}` - Get specific branch details
-- `POST /branches` - Create new branch
-- `PUT /branches/{branch_id}` - Update branch (supports partial updates)
-- `DELETE /branches/{branch_id}` - Delete branch
-
-#### Employees CRUD
-- `GET /employees?organization_id={id}` - List all employees for an organization
-- `GET /employees/{employee_id}` - Get specific employee details
-- `POST /employees` - Create new employee
-- `PUT /employees/{employee_id}` - Update employee (supports partial updates)
-- `DELETE /employees/{employee_id}` - Delete employee
-
-#### Services CRUD
-- `GET /services?organization_id={id}` - List all services for an organization
-- `GET /services/{service_id}` - Get specific service details
-- `POST /services` - Create new service
-- `PUT /services/{service_id}` - Update service (supports partial updates)
-- `DELETE /services/{service_id}` - Delete service
-
-#### Timetables & Schedules
-- `GET /timetables?organization_id={id}` - List all timetables for an organization
-- `GET /timetable/{master_id}` - Get timetable with schedule days and redefinitions
-- `POST /timetable` - Create new timetable
-- `PUT /timetable/{master_id}` - Update timetable
-- `DELETE /timetable/{master_id}` - Delete timetable
-- `POST /timetable/redefinitions` - Create day redefinition
-- `DELETE /timetable/redefinitions/{master_id}/{date}` - Delete day redefinition
-
 ## Key Dependencies
 
 - **Runtime**: tokio 1.47 (async runtime)
