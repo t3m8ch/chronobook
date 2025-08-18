@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 pub mod branch;
 pub mod employee;
+pub mod notification;
 pub mod service;
 pub mod timetable;
 
@@ -23,6 +24,7 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
         .routes(routes!(get_organization_dashboard))
         .merge(branch::router())
         .merge(employee::router())
+        .merge(notification::router())
         .merge(service::router())
         .merge(timetable::router())
 }

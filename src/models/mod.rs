@@ -5,6 +5,7 @@ pub mod dashboard;
 pub mod employee;
 pub mod error;
 pub mod master;
+pub mod notification;
 pub mod organization;
 pub mod service;
 pub mod timetable;
