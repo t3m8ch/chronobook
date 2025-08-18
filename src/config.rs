@@ -11,6 +11,7 @@ pub struct Config {
     pub jwt_cookie_allow_origin: HeaderValue,
     pub database_url: String,
     pub redis_url: String,
+    pub telegram_hash_secret: String,
 }
 
 impl Config {
@@ -36,6 +37,7 @@ impl Config {
             .parse::<HeaderValue>();
         let database_url = std::env::var("DATABASE_URL");
         let redis_url = std::env::var("REDIS_URL").unwrap_or("redis://127.0.0.1:6379".to_string());
+        let telegram_hash_secret = std::env::var("TELEGRAM_HASH_SECRET");
 
         if let Err(_) = access_secret.clone() {
             errors.push("JWT_ACCESS_SECRET is not set".to_string());
@@ -61,6 +63,10 @@ impl Config {
             errors.push("DATABASE_URL is not set".to_string());
         }
 
+        if let Err(_) = telegram_hash_secret.clone() {
+            errors.push("TELEGRAM_HASH_SECRET is not set".to_string());
+        }
+
         if !errors.is_empty() {
             return Err(anyhow::Error::msg(format!(
                 "Failed to load configuration. Errors: {:#?}",
@@ -77,6 +83,7 @@ impl Config {
             jwt_cookie_allow_origin: jwt_cookie_allow_origin?,
             database_url: database_url?,
             redis_url,
+            telegram_hash_secret: telegram_hash_secret?,
         })
     }
 }

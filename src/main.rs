@@ -140,6 +140,7 @@ async fn main() -> anyhow::Result<()> {
             sms_provider.clone(),
             telegram_provider.clone(),
             jwt_manager.clone(),
+            config.telegram_hash_secret.clone(),
         )),
         jwt_cookie_settings: if cfg!(debug_assertions) {
             JwtCookieSettings {

@@ -54,6 +54,7 @@ pub struct AuthServiceImpl {
     sms_provider: Arc<dyn SmsProvider>,
     telegram_provider: Arc<dyn TelegramProvider>,
     jwt_manager: Arc<JwtManager>,
+    telegram_hash_secret: String,
 }
 
 impl AuthServiceImpl {
@@ -62,12 +63,14 @@ impl AuthServiceImpl {
         sms_provider: Arc<dyn SmsProvider>,
         telegram_provider: Arc<dyn TelegramProvider>,
         jwt_manager: Arc<JwtManager>,
+        telegram_hash_secret: String,
     ) -> Self {
         Self {
             auth_repo,
             sms_provider,
             telegram_provider,
             jwt_manager,
+            telegram_hash_secret,
         }
     }
 
@@ -156,12 +159,35 @@ impl AuthService for AuthServiceImpl {
     }
 
     async fn login_telegram(&self) -> Result<TelegramVerifyHash, AuthServiceError> {
-        // Generate random hash for verification
-        let mut rng = rand::thread_rng();
-        let random_bytes: Vec<u8> = (0..32).map(|_| rng.r#gen::<u8>()).collect();
+        use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+        use hmac::{Hmac, Mac};
+        use sha2::Sha256;
 
-        // Convert to hex string for display
-        let hash_string = hex::encode(&random_bytes);
+        // Generate random salt (16 bytes for good entropy)
+        let mut rng = rand::thread_rng();
+        let salt: Vec<u8> = (0..16).map(|_| rng.r#gen::<u8>()).collect();
+
+        // Create HMAC-SHA256 with secret key
+        type HmacSha256 = Hmac<Sha256>;
+        let mut mac =
+            HmacSha256::new_from_slice(self.telegram_hash_secret.as_bytes()).map_err(|e| {
+                AuthServiceError::InternalError(format!("HMAC initialization failed: {}", e))
+            })?;
+
+        // Add salt to HMAC
+        mac.update(&salt);
+
+        // Get the HMAC result
+        let result = mac.finalize();
+        let hmac_bytes = result.into_bytes();
+
+        // Combine salt and HMAC (16 bytes salt + 32 bytes HMAC = 48 bytes)
+        let mut combined = Vec::with_capacity(48);
+        combined.extend_from_slice(&salt);
+        combined.extend_from_slice(&hmac_bytes);
+
+        // Encode to base64url (48 bytes -> 64 chars in base64url without padding)
+        let hash_string = URL_SAFE_NO_PAD.encode(&combined);
 
         Ok(TelegramVerifyHash { hash: hash_string })
     }
@@ -170,7 +196,42 @@ impl AuthService for AuthServiceImpl {
         &self,
         request: &TelegramAuthRequest,
     ) -> Result<(String, String), AuthServiceError> {
-        // Verify telegram auth data
+        use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+        use hmac::{Hmac, Mac};
+        use sha2::Sha256;
+
+        // Decode the hash from base64url
+        let combined_bytes = URL_SAFE_NO_PAD
+            .decode(&request.hash)
+            .map_err(|e| AuthServiceError::InternalError(format!("Invalid hash format: {}", e)))?;
+
+        // Extract salt and HMAC (16 bytes salt + 32 bytes HMAC)
+        if combined_bytes.len() != 48 {
+            return Err(AuthServiceError::InvalidTelegramHash);
+        }
+
+        let salt = &combined_bytes[..16];
+        let received_hmac = &combined_bytes[16..];
+
+        // Recreate HMAC with the same salt
+        type HmacSha256 = Hmac<Sha256>;
+        let mut mac =
+            HmacSha256::new_from_slice(self.telegram_hash_secret.as_bytes()).map_err(|e| {
+                AuthServiceError::InternalError(format!("HMAC initialization failed: {}", e))
+            })?;
+
+        mac.update(salt);
+
+        // Verify HMAC
+        let expected_hmac = mac.finalize().into_bytes();
+
+        // Constant-time comparison to prevent timing attacks
+        use subtle::ConstantTimeEq;
+        if received_hmac.ct_eq(&expected_hmac[..]).unwrap_u8() != 1 {
+            return Err(AuthServiceError::InvalidTelegramHash);
+        }
+
+        // Additionally verify with Telegram provider if needed
         let is_valid = self
             .telegram_provider
             .verify_auth_data(
@@ -297,13 +358,6 @@ impl AuthService for AuthServiceImpl {
     }
 }
 
-// Add hex module inline since we need it for hash encoding
-mod hex {
-    pub fn encode(bytes: &[u8]) -> String {
-        bytes.iter().map(|b| format!("{:02x}", b)).collect()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -342,6 +396,7 @@ mod tests {
                     .token_store(Arc::new(mock_token_store))
                     .build(),
             ),
+            "test_telegram_secret".to_string(),
         )
     }
 
@@ -417,6 +472,7 @@ mod tests {
                     })
                     .build(),
             ),
+            "test_telegram_secret".to_string(),
         );
 
         let request = PhoneLoginRequest {

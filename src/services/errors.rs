@@ -42,8 +42,8 @@ pub enum AuthServiceError {
     #[error("Invalid phone number format")]
     InvalidPhoneNumber,
 
-    #[error("Internal server error")]
-    InternalError,
+    #[error("Internal server error: {0}")]
+    InternalError(String),
 }
 
 impl From<AuthServiceError> for crate::models::error::ApiError {
@@ -73,7 +73,9 @@ impl From<AuthServiceError> for crate::models::error::ApiError {
             | AuthServiceError::TokenGenerationError(_)
             | AuthServiceError::SmsSendError(_)
             | AuthServiceError::TelegramError(_)
-            | AuthServiceError::InternalError => ApiError::internal_server_error(err.to_string()),
+            | AuthServiceError::InternalError(_) => {
+                ApiError::internal_server_error(err.to_string())
+            }
         }
     }
 }
