@@ -1,4 +1,5 @@
 use axum::Router;
+use chrono::Duration;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
@@ -14,6 +15,7 @@ use crate::api::v1::{admin, auth, bookings};
 use crate::repositories::auth::PgAuthRepository;
 use crate::services::auth::AuthServiceImpl;
 use crate::services::jwt::JwtManager;
+use crate::services::jwt::JwtManagerBuilder;
 use crate::services::providers::MockSmsProvider;
 use crate::services::providers::MockTelegramProvider;
 
@@ -98,6 +100,29 @@ async fn main() -> anyhow::Result<()> {
         telegram_provider
     });
 
+    let jwt_manager = Arc::new(
+        JwtManager::builder()
+            .access_secret(
+                std::env::var("JWT_ACCESS_SECRET").expect("JWT_ACCESS_SECRET must be set"),
+            )
+            .refresh_secret(
+                std::env::var("JWT_REFRESH_SECRET").expect("JWT_REFRESH_SECRET must be set"),
+            )
+            .access_duration(Duration::minutes(
+                std::env::var("JWT_ACCESS_EXPIRATION_MINUTES")
+                    .unwrap_or("15".to_string())
+                    .parse()
+                    .expect("JWT_ACCESS_EXPIRATION must be a valid number"),
+            ))
+            .refresh_duration(Duration::days(
+                std::env::var("JWT_REFRESH_EXPIRATION_DAYS")
+                    .unwrap_or("7".to_string())
+                    .parse()
+                    .expect("JWT_REFRESH_EXPIRATION must be a valid number"),
+            ))
+            .build(),
+    );
+
     let pg_pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&std::env::var("DATABASE_URL").unwrap())
@@ -108,7 +133,7 @@ async fn main() -> anyhow::Result<()> {
             Arc::new(PgAuthRepository::new(pg_pool)),
             sms_provider.clone(),
             telegram_provider.clone(),
-            Arc::new(JwtManager::new()),
+            jwt_manager.clone(),
         )),
     });
 

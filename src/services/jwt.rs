@@ -1,3 +1,4 @@
+use bon::Builder;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, TokenData, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
@@ -19,35 +20,21 @@ pub enum TokenType {
     Refresh,
 }
 
+#[derive(Debug, Clone, Builder)]
+#[builder(on(String, into))]
 pub struct JwtManager {
     access_secret: String,
+
     refresh_secret: String,
+
+    #[builder(default = Duration::minutes(15))]
     access_duration: Duration,
+
+    #[builder(default = Duration::days(7))]
     refresh_duration: Duration,
 }
 
 impl JwtManager {
-    pub fn new() -> Self {
-        Self {
-            access_secret: std::env::var("JWT_ACCESS_SECRET")
-                .unwrap_or_else(|_| "your-access-secret-key".to_string()),
-            refresh_secret: std::env::var("JWT_REFRESH_SECRET")
-                .unwrap_or_else(|_| "your-refresh-secret-key".to_string()),
-            access_duration: Duration::minutes(
-                std::env::var("JWT_ACCESS_DURATION_MINUTES")
-                    .unwrap_or_else(|_| "15".to_string())
-                    .parse()
-                    .unwrap_or(15),
-            ),
-            refresh_duration: Duration::days(
-                std::env::var("JWT_REFRESH_DURATION_DAYS")
-                    .unwrap_or_else(|_| "7".to_string())
-                    .parse()
-                    .unwrap_or(7),
-            ),
-        }
-    }
-
     pub fn generate_access_token(
         &self,
         user_id: Uuid,
@@ -145,7 +132,10 @@ mod tests {
 
     #[test]
     fn test_generate_and_verify_access_token() {
-        let jwt_manager = JwtManager::new();
+        let jwt_manager = JwtManager::builder()
+            .access_secret("secret")
+            .refresh_secret("secret")
+            .build();
         let user_id = Uuid::now_v7();
         let org_id = Some(Uuid::now_v7());
 
@@ -164,7 +154,10 @@ mod tests {
 
     #[test]
     fn test_generate_and_verify_refresh_token() {
-        let jwt_manager = JwtManager::new();
+        let jwt_manager = JwtManager::builder()
+            .access_secret("secret")
+            .refresh_secret("secret")
+            .build();
         let user_id = Uuid::now_v7();
         let org_id = None;
 
@@ -183,7 +176,11 @@ mod tests {
 
     #[test]
     fn test_invalid_token_type() {
-        let jwt_manager = JwtManager::new();
+        let jwt_manager = JwtManager::builder()
+            .access_secret("secret")
+            .refresh_secret("secret")
+            .build();
+
         let user_id = Uuid::now_v7();
 
         let refresh_token = jwt_manager

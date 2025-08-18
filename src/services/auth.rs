@@ -285,7 +285,12 @@ mod tests {
             Arc::new(mock_repo),
             Arc::new(mock_sms),
             Arc::new(mock_telegram),
-            Arc::new(JwtManager::new()),
+            Arc::new(
+                JwtManager::builder()
+                    .access_secret("secret")
+                    .refresh_secret("secret")
+                    .build(),
+            ),
         )
     }
 
@@ -344,7 +349,12 @@ mod tests {
             Arc::new(mock_repo),
             Arc::new(mock_sms),
             Arc::new(MockTelegramProvider::new()),
-            Arc::new(JwtManager::new()),
+            Arc::new(
+                JwtManager::builder()
+                    .access_secret("secret")
+                    .refresh_secret("secret")
+                    .build(),
+            ),
         );
 
         let request = PhoneLoginRequest {
@@ -513,7 +523,11 @@ mod tests {
         let org_id = Uuid::now_v7();
 
         // Generate a valid refresh token
-        let jwt_manager = JwtManager::new();
+        let jwt_manager = JwtManager::builder()
+            .access_secret("secret")
+            .refresh_secret("secret")
+            .build();
+
         let refresh_token = jwt_manager
             .generate_refresh_token(user.id, Some(org_id))
             .unwrap();
