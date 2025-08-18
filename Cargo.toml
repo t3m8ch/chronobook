@@ -28,4 +28,11 @@ utoipa = { version = "5.4.0", features = [
 ] }
 utoipa-axum = "0.2.0"
 utoipa-scalar = { version = "0.3.0", features = ["axum"] }
-uuid = { version = "1.18.0", features = ["serde", "v4"] }
+uuid = { version = "1.18.0", features = ["serde", "v4", "v7"] }
+jsonwebtoken = "9.3"
+rand = "0.8"
+sha2 = "0.10"
+thiserror = "2.0"
+axum-extra = { version = "0.10", features = ["cookie"] }
+time = "0.3"
+hex = "0.4"

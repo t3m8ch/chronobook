@@ -44,7 +44,7 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn create_service(
     State(_state): State<Arc<AppState>>,
     Json(request): Json<CreateServiceRequest>,
@@ -69,7 +69,7 @@ pub async fn create_service(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn list_services(
     Query(query): Query<ListQuery>,
     State(_state): State<Arc<AppState>>,
@@ -95,7 +95,7 @@ pub async fn list_services(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn get_service(
     Path(service_id): Path<Uuid>,
     State(_state): State<Arc<AppState>>,
@@ -122,7 +122,7 @@ pub async fn get_service(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn update_service(
     Path(service_id): Path<Uuid>,
     State(_state): State<Arc<AppState>>,
@@ -149,7 +149,7 @@ pub async fn update_service(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn delete_service(
     Path(service_id): Path<Uuid>,
     State(_state): State<Arc<AppState>>,

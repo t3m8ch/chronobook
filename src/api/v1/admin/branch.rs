@@ -46,7 +46,7 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn create_branch(
     State(_state): State<Arc<AppState>>,
     Json(request): Json<CreateBranchRequest>,
@@ -73,7 +73,7 @@ pub async fn create_branch(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn list_branches(
     Query(query): Query<ListQuery>,
     State(_state): State<Arc<AppState>>,
@@ -101,7 +101,7 @@ pub async fn list_branches(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn get_branch(
     Path(branch_id): Path<Uuid>,
     State(_state): State<Arc<AppState>>,
@@ -130,7 +130,7 @@ pub async fn get_branch(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn update_branch(
     Path(branch_id): Path<Uuid>,
     State(_state): State<Arc<AppState>>,
@@ -159,7 +159,7 @@ pub async fn update_branch(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn delete_branch(
     Path(branch_id): Path<Uuid>,
     State(_state): State<Arc<AppState>>,

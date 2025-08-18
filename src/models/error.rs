@@ -26,6 +26,30 @@ impl ApiError {
         self.details = Some(details);
         self
     }
+
+    pub fn not_found(message: impl Into<String>) -> Self {
+        Self::new("NOT_FOUND", message)
+    }
+
+    pub fn bad_request(message: impl Into<String>) -> Self {
+        Self::new("BAD_REQUEST", message)
+    }
+
+    pub fn unauthorized(message: impl Into<String>) -> Self {
+        Self::new("UNAUTHORIZED", message)
+    }
+
+    pub fn forbidden(message: impl Into<String>) -> Self {
+        Self::new("FORBIDDEN", message)
+    }
+
+    pub fn internal_server_error(message: impl Into<String>) -> Self {
+        Self::new("INTERNAL_SERVER_ERROR", message)
+    }
+
+    pub fn rate_limit(message: impl Into<String>) -> Self {
+        Self::new("RATE_LIMIT_EXCEEDED", message)
+    }
 }
 
 impl IntoResponse for ApiError {

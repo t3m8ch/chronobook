@@ -44,7 +44,7 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
     ),
     tag = "bookings"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn get_organization_by_name(
     State(_state): State<Arc<AppState>>,
     Path(organization_name): Path<String>,
@@ -65,7 +65,7 @@ pub async fn get_organization_by_name(
     ),
     tag = "bookings"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn get_services(
     State(_state): State<Arc<AppState>>,
     Query(query): Query<GetServicesQuery>,
@@ -87,7 +87,7 @@ pub async fn get_services(
     ),
     tag = "bookings"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn get_masters(
     State(_state): State<Arc<AppState>>,
     Query(query): Query<GetMastersQuery>,
@@ -109,7 +109,7 @@ pub async fn get_masters(
     ),
     tag = "bookings"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn get_master_by_id(
     State(_state): State<Arc<AppState>>,
     Path(master_id): Path<Uuid>,
@@ -131,7 +131,7 @@ pub async fn get_master_by_id(
     ),
     tag = "bookings"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn get_branches(
     State(_state): State<Arc<AppState>>,
     Query(query): Query<GetBranchesQuery>,

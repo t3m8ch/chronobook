@@ -1,0 +1,196 @@
+use chrono::{Duration, Utc};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, TokenData, Validation, decode, encode};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: Uuid,         // User ID
+    pub org: Option<Uuid>, // Organization ID for customers
+    pub exp: i64,          // Expiration time
+    pub iat: i64,          // Issued at
+    pub token_type: TokenType,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum TokenType {
+    Access,
+    Refresh,
+}
+
+pub struct JwtManager {
+    access_secret: String,
+    refresh_secret: String,
+    access_duration: Duration,
+    refresh_duration: Duration,
+}
+
+impl JwtManager {
+    pub fn new() -> Self {
+        Self {
+            access_secret: std::env::var("JWT_ACCESS_SECRET")
+                .unwrap_or_else(|_| "your-access-secret-key".to_string()),
+            refresh_secret: std::env::var("JWT_REFRESH_SECRET")
+                .unwrap_or_else(|_| "your-refresh-secret-key".to_string()),
+            access_duration: Duration::minutes(
+                std::env::var("JWT_ACCESS_DURATION_MINUTES")
+                    .unwrap_or_else(|_| "15".to_string())
+                    .parse()
+                    .unwrap_or(15),
+            ),
+            refresh_duration: Duration::days(
+                std::env::var("JWT_REFRESH_DURATION_DAYS")
+                    .unwrap_or_else(|_| "7".to_string())
+                    .parse()
+                    .unwrap_or(7),
+            ),
+        }
+    }
+
+    pub fn generate_access_token(
+        &self,
+        user_id: Uuid,
+        organization_id: Option<Uuid>,
+    ) -> Result<String, jsonwebtoken::errors::Error> {
+        let now = Utc::now();
+        let exp = now + self.access_duration;
+
+        let claims = Claims {
+            sub: user_id,
+            org: organization_id,
+            exp: exp.timestamp(),
+            iat: now.timestamp(),
+            token_type: TokenType::Access,
+        };
+
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(self.access_secret.as_bytes()),
+        )
+    }
+
+    pub fn generate_refresh_token(
+        &self,
+        user_id: Uuid,
+        organization_id: Option<Uuid>,
+    ) -> Result<String, jsonwebtoken::errors::Error> {
+        let now = Utc::now();
+        let exp = now + self.refresh_duration;
+
+        let claims = Claims {
+            sub: user_id,
+            org: organization_id,
+            exp: exp.timestamp(),
+            iat: now.timestamp(),
+            token_type: TokenType::Refresh,
+        };
+
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(self.refresh_secret.as_bytes()),
+        )
+    }
+
+    pub fn verify_access_token(
+        &self,
+        token: &str,
+    ) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error> {
+        let mut validation = Validation::default();
+        validation.validate_exp = true;
+
+        let token_data = decode::<Claims>(
+            token,
+            &DecodingKey::from_secret(self.access_secret.as_bytes()),
+            &validation,
+        )?;
+
+        if token_data.claims.token_type != TokenType::Access {
+            return Err(jsonwebtoken::errors::Error::from(
+                jsonwebtoken::errors::ErrorKind::InvalidToken,
+            ));
+        }
+
+        Ok(token_data)
+    }
+
+    pub fn verify_refresh_token(
+        &self,
+        token: &str,
+    ) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error> {
+        let mut validation = Validation::default();
+        validation.validate_exp = true;
+
+        let token_data = decode::<Claims>(
+            token,
+            &DecodingKey::from_secret(self.refresh_secret.as_bytes()),
+            &validation,
+        )?;
+
+        if token_data.claims.token_type != TokenType::Refresh {
+            return Err(jsonwebtoken::errors::Error::from(
+                jsonwebtoken::errors::ErrorKind::InvalidToken,
+            ));
+        }
+
+        Ok(token_data)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_and_verify_access_token() {
+        let jwt_manager = JwtManager::new();
+        let user_id = Uuid::now_v7();
+        let org_id = Some(Uuid::now_v7());
+
+        let token = jwt_manager
+            .generate_access_token(user_id, org_id)
+            .expect("Failed to generate access token");
+
+        let token_data = jwt_manager
+            .verify_access_token(&token)
+            .expect("Failed to verify access token");
+
+        assert_eq!(token_data.claims.sub, user_id);
+        assert_eq!(token_data.claims.org, org_id);
+        assert_eq!(token_data.claims.token_type, TokenType::Access);
+    }
+
+    #[test]
+    fn test_generate_and_verify_refresh_token() {
+        let jwt_manager = JwtManager::new();
+        let user_id = Uuid::now_v7();
+        let org_id = None;
+
+        let token = jwt_manager
+            .generate_refresh_token(user_id, org_id)
+            .expect("Failed to generate refresh token");
+
+        let token_data = jwt_manager
+            .verify_refresh_token(&token)
+            .expect("Failed to verify refresh token");
+
+        assert_eq!(token_data.claims.sub, user_id);
+        assert_eq!(token_data.claims.org, org_id);
+        assert_eq!(token_data.claims.token_type, TokenType::Refresh);
+    }
+
+    #[test]
+    fn test_invalid_token_type() {
+        let jwt_manager = JwtManager::new();
+        let user_id = Uuid::now_v7();
+
+        let refresh_token = jwt_manager
+            .generate_refresh_token(user_id, None)
+            .expect("Failed to generate refresh token");
+
+        let result = jwt_manager.verify_access_token(&refresh_token);
+        assert!(result.is_err());
+    }
+}

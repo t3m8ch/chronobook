@@ -1,18 +1,14 @@
-use axum::{
-    Json,
-    extract::{Path, State},
-    response::IntoResponse,
-};
+use axum::{Json, extract::State, response::IntoResponse};
+use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use std::sync::Arc;
+use time::Duration;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
     AppState,
     models::{
         auth::{
-            request::{
-                PhoneLoginRequest, PhoneVerifyRequest, RefreshTokenRequest, TelegramAuthRequest,
-            },
+            request::{PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest},
             response::{AccessToken, PhoneLoginOk, TelegramVerifyHash},
         },
         error::ApiError,
@@ -40,18 +36,16 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
     ),
     tag = "auth"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 pub async fn login_phone(
-    Path(organization_name): Path<String>,
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
     Json(request): Json<PhoneLoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     request.validate_ext()?;
 
-    // TODO: Implement phone login logic
-    Ok(Json(PhoneLoginOk {
-        message: "Verification code sent".to_string(),
-    }))
+    let result = state.auth_service.login_phone(&request).await?;
+
+    Ok(Json(result))
 }
 
 #[utoipa::path(
@@ -65,19 +59,26 @@ pub async fn login_phone(
     ),
     tag = "auth"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(state, jar))]
 pub async fn verify_phone(
-    Path(organization_name): Path<String>,
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
+    jar: CookieJar,
     Json(request): Json<PhoneVerifyRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     request.validate_ext()?;
 
-    // TODO: Implement phone verification logic
-    Ok(Json(AccessToken {
-        access_token: "mock_access_token".to_string(),
-        refresh_token: "mock_refresh_token".to_string(),
-    }))
+    let (access_token, refresh_token) = state.auth_service.verify_phone(&request).await?;
+
+    // Create HTTP-only cookie for refresh token
+    let refresh_cookie = Cookie::build(("refresh_token", refresh_token))
+        .http_only(true)
+        .secure(true)
+        .same_site(SameSite::Strict)
+        .path("/")
+        .max_age(Duration::days(7))
+        .build();
+
+    Ok((jar.add(refresh_cookie), Json(AccessToken { access_token })))
 }
 
 #[utoipa::path(
@@ -90,15 +91,13 @@ pub async fn verify_phone(
     ),
     tag = "auth"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 pub async fn login_telegram(
-    Path(organization_name): Path<String>,
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement Telegram login logic
-    Ok(Json(TelegramVerifyHash {
-        hash: "mock_hash".to_string(),
-    }))
+    let result = state.auth_service.login_telegram().await?;
+
+    Ok(Json(result))
 }
 
 #[utoipa::path(
@@ -112,23 +111,29 @@ pub async fn login_telegram(
     ),
     tag = "auth"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(state, jar))]
 pub async fn verify_telegram(
-    Path(organization_name): Path<String>,
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
+    jar: CookieJar,
     Json(request): Json<TelegramAuthRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement Telegram verification logic
-    Ok(Json(AccessToken {
-        access_token: "mock_access_token".to_string(),
-        refresh_token: "mock_refresh_token".to_string(),
-    }))
+    let (access_token, refresh_token) = state.auth_service.verify_telegram(&request).await?;
+
+    // Create HTTP-only cookie for refresh token
+    let refresh_cookie = Cookie::build(("refresh_token", refresh_token))
+        .http_only(true)
+        .secure(true)
+        .same_site(SameSite::Strict)
+        .path("/")
+        .max_age(Duration::days(7))
+        .build();
+
+    Ok((jar.add(refresh_cookie), Json(AccessToken { access_token })))
 }
 
 #[utoipa::path(
     post,
     path = "/refresh",
-    request_body = RefreshTokenRequest,
     responses(
         (status = 200, description = "Token refreshed", body = AccessToken),
         (status = 400, description = "Bad request", body = ApiError),
@@ -136,15 +141,27 @@ pub async fn verify_telegram(
     ),
     tag = "auth"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(state, jar))]
 pub async fn refresh(
-    Path(organization_name): Path<String>,
-    State(_state): State<Arc<AppState>>,
-    Json(request): Json<RefreshTokenRequest>,
+    State(state): State<Arc<AppState>>,
+    jar: CookieJar,
 ) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement token refresh logic
-    Ok(Json(AccessToken {
-        access_token: "new_access_token".to_string(),
-        refresh_token: "new_refresh_token".to_string(),
-    }))
+    // Get refresh token from cookie
+    let refresh_token = jar
+        .get("refresh_token")
+        .ok_or_else(|| ApiError::bad_request("Refresh token not found in cookies".to_string()))?
+        .value();
+
+    let (access_token, new_refresh_token) = state.auth_service.refresh_token(refresh_token).await?;
+
+    // Create new HTTP-only cookie for refresh token
+    let refresh_cookie = Cookie::build(("refresh_token", new_refresh_token))
+        .http_only(true)
+        .secure(true)
+        .same_site(SameSite::Strict)
+        .path("/")
+        .max_age(Duration::days(7))
+        .build();
+
+    Ok((jar.add(refresh_cookie), Json(AccessToken { access_token })))
 }

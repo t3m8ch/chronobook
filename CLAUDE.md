@@ -53,6 +53,10 @@ cargo test -- --nocapture  # Show println! output during tests
 │   ├── error.rs        # ApiError type definition
 │   ├── validation.rs   # Validation utilities with garde
 │   ├── auth/           # Auth request/response models
+│   │   ├── mod.rs      # Auth module definitions
+│   │   ├── request.rs  # Auth request DTOs
+│   │   ├── response.rs # Auth response DTOs
+│   │   └── db.rs       # Auth database models for SQLx
 │   ├── booking/        # Booking request/response models
 │   ├── branch/         # Branch request/response models
 │   ├── dashboard/      # Dashboard response models
@@ -62,6 +66,15 @@ cargo test -- --nocapture  # Show println! output during tests
 │   ├── organization/   # Organization response models
 │   ├── service/        # Service request/response models
 │   └── timetable/      # Timetable request/response models
+├── repositories/       # Data access layer with traits
+│   ├── mod.rs          # Repository module definitions
+│   └── auth.rs         # Auth repository implementation
+├── services/           # Business logic layer
+│   ├── mod.rs          # Service module definitions
+│   ├── auth.rs         # Auth service implementation
+│   ├── errors.rs       # Service-specific error types (using thiserror)
+│   ├── jwt.rs          # JWT utilities for token management
+│   └── providers.rs    # External service providers (SMS, Telegram)
 /migrations/            # SQLx database migrations
 /docs/                  # Documentation and specifications
 ```
@@ -115,17 +128,28 @@ The codebase uses `yare` for parameterized testing. Key practices:
 - **OpenAPI UI**: utoipa-scalar 0.3 (Scalar UI for API documentation)
 - **OpenAPI Router**: utoipa-axum 0.2 (OpenAPI-aware routing)
 - **Database**: sqlx 0.8 with PostgreSQL (compile-time checked queries)
-- **Time**: chrono 0.4 for date/time handling
+- **Time**: chrono 0.4 for date/time handling, time 0.3 for cookie timestamps
 - **Validation**: garde 0.22 for input validation
-- **Error Handling**: anyhow 1.0 for error management
+- **Error Handling**: anyhow 1.0 for error management, thiserror 2.0 for service errors
 - **IDs**: uuid 1.18 for unique identifiers
 - **Phone Validation**: phonenumber 0.3 for international phone number validation
 - **Serialization**: serde 1.0 + serde_json for JSON handling
 - **HTTP Middleware**: tower 0.5 + tower-http 0.6 (CORS, tracing)
+- **HTTP Extras**: axum-extra 0.10 for cookie handling and extractors
 - **Tracing**: tracing 0.1 + tracing-subscriber 0.3 for logging
 - **Environment**: dotenv 0.15 for environment variables
+- **Authentication**: jsonwebtoken 9.3 for JWT tokens
+- **Cryptography**: sha2 0.10 for hashing, hex 0.4 for encoding
+- **Random**: rand 0.8 for generating secure tokens
 - **Testing**: mockall 0.13 for mocking in tests
 - **Utilities**: derive_more 2.0 for custom derives, async-trait 0.1 for async traits
+
+### Missing Test Dependencies (to be added)
+```toml
+[dev-dependencies]
+yare = "3.0"      # For parameterized testing
+bon = "4.0"       # For test data builders
+```
 
 ## Business Logic Notes
 
@@ -170,7 +194,8 @@ curl http://localhost:3222/api/v1/openapi.json  # Get OpenAPI spec
 - **Dual User Types**: Separate flows for customers vs employees
 - **Multi-Method Auth**: SMS and Telegram authentication support
 - **Organization Scoping**: Customer auth scoped to specific organizations
-- **Token Management**: Refresh token mechanism for both user types
+- **Token Management**: Access/refresh token mechanism for both user types
+- **Secure Cookies**: Refresh tokens stored in HTTP-only cookies for security
 
 ### API Design Patterns
 - **Strong Typing**: Separate request/response models for each endpoint
@@ -184,11 +209,20 @@ curl http://localhost:3222/api/v1/openapi.json  # Get OpenAPI spec
   - `Some(None)` (field explicitly null) → clear the value
   - `Some(Some(value))` → update to new value
 
+### Layered Architecture
+- **API Layer**: Axum handlers that depend on services via traits
+- **Service Layer**: Business logic implementation with trait-based interfaces
+- **Repository Layer**: Data access layer with trait-based interfaces
+- **Dependency Injection**: All layers use `Arc<dyn Trait>` for testability
+- **Error Management**: Service-specific errors using `thiserror`
+- **Role-Based Security**: Axum extractors for endpoint protection
+
 ### Data Modeling Decisions
 - **Multi-Tenancy**: Organization-based data isolation
 - **Flexible Scheduling**: JSONB for complex schedule data
-- **Role-Based Access**: Boolean flags for employee roles
+- **Role-Based Access**: Boolean flags for employee roles with extractor validation
 - **Service Flexibility**: Optional duration for services
+- **Database Models**: Separate `db.rs` modules for SQLx-specific models
 
 ## Mermaid ER Diagram Notes
 
@@ -199,3 +233,66 @@ When creating Mermaid ER diagrams, avoid these common mistakes:
    - After field type, only PK, FK, or UK annotations are allowed
    - No hyphens or underscores in annotations
    - Each field should be on its own line with proper spacing
+
+## Implementation Guidelines
+
+### Current Implementation Status
+The project is actively being developed with the following layers implemented:
+
+**✅ Completed:**
+- Basic project structure with layered architecture
+- Authentication service and repository layers
+- JWT token utilities
+- Service error handling with thiserror
+- Database models in separate `db.rs` modules
+- HTTP-only cookie support for refresh tokens
+
+**🔄 In Progress:**
+- Full CRUD operations for all entities
+- Role-based access control extractors
+- Complete test coverage
+- External service providers (SMS, Telegram)
+
+**📋 TODO:**
+- Add missing test dependencies (yare, bon)
+- Complete repository implementations
+- Add comprehensive integration tests
+
+### Backend Implementation Guidelines
+
+1. **Layered Architecture**
+   - Create separate repository and service layers
+   - Use trait-based interfaces for all layers
+   - Wrap traits in `Arc<dyn ...>` for dependency injection
+
+2. **Data Transfer Objects**
+   - Reuse API DTOs in services (avoid service-specific DTOs for now)
+   - Create database models in `models/{entity}/db.rs` modules
+   - Keep request/response models separate from database models
+
+3. **Error Handling**
+   - Use `thiserror` for service-specific custom errors
+   - Maintain consistent `ApiError` structure for API responses
+   - Propagate errors properly through layers
+
+4. **Security**
+   - Store refresh tokens ONLY in HTTP-only cookies
+   - Never return refresh tokens in response bodies
+   - Use Axum extractors for role-based endpoint protection
+   - Implement proper CORS and security headers
+
+5. **Testing Strategy**
+   - Write comprehensive unit tests for all layers
+   - Use `mockall` for mocking dependencies in tests
+   - Apply `yare` for parameterized testing
+   - Use `bon` for test data builders with sensible defaults
+
+6. **External Services**
+   - Define traits for SMS and Telegram providers
+   - Use mocks for external services in tests
+   - Keep provider implementations separate and swappable
+
+7. **Code Organization**
+   - Follow the established directory structure
+   - Use async-trait for all async trait definitions
+   - Apply proper module visibility and encapsulation

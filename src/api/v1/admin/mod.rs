@@ -54,7 +54,7 @@ pub struct ListQuery {
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn get_organization_dashboard(
     Path(organization_id): Path<Uuid>,
     State(_state): State<Arc<AppState>>,

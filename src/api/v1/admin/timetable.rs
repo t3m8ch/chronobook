@@ -60,7 +60,7 @@ pub struct TimetableWithRedefinitionsOut {
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn create_timetable(
     State(_state): State<Arc<AppState>>,
     Json(request): Json<CreateTimetableRequest>,
@@ -87,7 +87,7 @@ pub async fn create_timetable(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn list_timetables(
     Query(query): Query<ListQuery>,
     State(_state): State<Arc<AppState>>,
@@ -115,7 +115,7 @@ pub async fn list_timetables(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn get_timetable_with_redefinitions(
     Path(master_id): Path<Uuid>,
     State(_state): State<Arc<AppState>>,
@@ -144,7 +144,7 @@ pub async fn get_timetable_with_redefinitions(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn update_timetable(
     Path(master_id): Path<Uuid>,
     State(_state): State<Arc<AppState>>,
@@ -173,7 +173,7 @@ pub async fn update_timetable(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn delete_timetable(
     Path(master_id): Path<Uuid>,
     State(_state): State<Arc<AppState>>,
@@ -199,7 +199,7 @@ pub async fn delete_timetable(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn create_day_redefinition(
     State(_state): State<Arc<AppState>>,
     Json(request): Json<CreateDayRedefinitionRequest>,
@@ -228,7 +228,7 @@ pub async fn create_day_redefinition(
     ),
     tag = "admin"
 )]
-#[tracing::instrument]
+#[tracing::instrument(skip(_state))]
 pub async fn delete_day_redefinition(
     Path((master_id, date)): Path<(Uuid, NaiveDate)>,
     State(_state): State<Arc<AppState>>,

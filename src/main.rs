@@ -1,5 +1,6 @@
 use axum::Router;
 use dotenv::dotenv;
+use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -10,13 +11,20 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa_scalar::{Scalar, Servable};
 
 use crate::api::v1::{admin, auth, bookings};
+use crate::repositories::auth::PgAuthRepository;
+use crate::services::auth::AuthServiceImpl;
+use crate::services::jwt::JwtManager;
+use crate::services::providers::MockSmsProvider;
+use crate::services::providers::MockTelegramProvider;
 
 mod api;
 mod models;
+mod repositories;
+mod services;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct AppState {
-    // Add your shared state here (e.g., database pool)
+    pub auth_service: Arc<dyn crate::services::auth::AuthService>,
 }
 
 struct SecurityAddon;
@@ -57,7 +65,7 @@ impl Modify for SecurityAddon {
 struct ApiDoc;
 
 #[tokio::main]
-async fn main() -> Result<(), std::io::Error> {
+async fn main() -> anyhow::Result<()> {
     dotenv().ok();
 
     tracing_subscriber::fmt()
@@ -66,8 +74,42 @@ async fn main() -> Result<(), std::io::Error> {
 
     let server_addr = std::env::var("SERVER_ADDR").unwrap_or("0.0.0.0:3222".to_string());
 
+    let sms_provider = Arc::new({
+        let mut sms_provider = MockSmsProvider::new();
+        sms_provider.expect_send_notification().return_const(Ok(()));
+        sms_provider
+            .expect_send_verification_code()
+            .return_const(Ok(()));
+        sms_provider
+    });
+
+    let telegram_provider = Arc::new({
+        let mut telegram_provider = MockTelegramProvider::new();
+        telegram_provider.expect_send_message().return_const(Ok(()));
+        telegram_provider
+            .expect_send_notification()
+            .return_const(Ok(()));
+        telegram_provider
+            .expect_generate_auth_hash()
+            .return_const(Ok(Vec::new()));
+        telegram_provider
+            .expect_verify_auth_data()
+            .return_const(Ok(true));
+        telegram_provider
+    });
+
+    let pg_pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&std::env::var("DATABASE_URL").unwrap())
+        .await?;
+
     let state = Arc::new(AppState {
-        // Initialize your state here
+        auth_service: Arc::new(AuthServiceImpl::new(
+            Arc::new(PgAuthRepository::new(pg_pool)),
+            sms_provider.clone(),
+            telegram_provider.clone(),
+            Arc::new(JwtManager::new()),
+        )),
     });
 
     // Build the routers with OpenApiRouter
