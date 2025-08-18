@@ -42,24 +42,26 @@ cargo test -- --nocapture  # Show println! output during tests
 │       ├── auth.rs     # Authentication endpoints (phone/telegram)
 │       ├── bookings.rs # Booking management endpoints
 │       └── admin/      # Admin endpoints module
-│           ├── mod.rs      # Admin module with dashboard endpoint
-│           ├── branch.rs   # Branch CRUD operations
-│           ├── employee.rs # Employee CRUD operations
-│           ├── service.rs  # Service CRUD operations
-│           └── timetable.rs # Timetable and schedule management
+│           ├── mod.rs          # Admin module with dashboard endpoint
+│           ├── branch.rs       # Branch CRUD operations
+│           ├── employee.rs     # Employee CRUD operations
+│           ├── notification.rs # Notification settings and templates management
+│           ├── service.rs      # Service CRUD operations
+│           └── timetable.rs    # Timetable and schedule management
 ├── models/             # Data models and DTOs
 │   ├── mod.rs          # Module definitions
 │   ├── error.rs        # ApiError type definition
 │   ├── validation.rs   # Validation utilities with garde
-│   ├── auth/          # Auth request/response models
-│   ├── booking/       # Booking request/response models
-│   ├── branch/        # Branch request/response models
-│   ├── dashboard/     # Dashboard response models
-│   ├── employee/      # Employee request/response models
-│   ├── master/        # Master response models
-│   ├── organization/  # Organization response models
-│   ├── service/       # Service request/response models
-│   └── timetable/     # Timetable request/response models
+│   ├── auth/           # Auth request/response models
+│   ├── booking/        # Booking request/response models
+│   ├── branch/         # Branch request/response models
+│   ├── dashboard/      # Dashboard response models
+│   ├── employee/       # Employee request/response models
+│   ├── master/         # Master response models
+│   ├── notification/   # Notification request/response models
+│   ├── organization/   # Organization response models
+│   ├── service/        # Service request/response models
+│   └── timetable/      # Timetable request/response models
 /migrations/            # SQLx database migrations
 /docs/                  # Documentation and specifications
 ```
@@ -104,6 +106,8 @@ The codebase uses `yare` for parameterized testing. Key practices:
 
 3. **Test Organization**: Tests live in `#[cfg(test)]` modules within implementation files
 
+4. **Mocking**: Use `mockall` for mocking external dependencies
+
 ## Key Dependencies
 
 - **Runtime**: tokio 1.47 (async runtime)
@@ -120,7 +124,8 @@ The codebase uses `yare` for parameterized testing. Key practices:
 - **HTTP Middleware**: tower 0.5 + tower-http 0.6 (CORS, tracing)
 - **Tracing**: tracing 0.1 + tracing-subscriber 0.3 for logging
 - **Environment**: dotenv 0.15 for environment variables
-- **Utilities**: derive_more 2.0 for custom derives
+- **Testing**: mockall 0.13 for mocking in tests
+- **Utilities**: derive_more 2.0 for custom derives, async-trait 0.1 for async traits
 
 ## Business Logic Notes
 
@@ -137,9 +142,11 @@ The codebase uses `yare` for parameterized testing. Key practices:
 - **Manager**: Branch-level administration
 
 ### Notification System
-- Supports SMS and Telegram bots
-- Configurable timing with quiet hours
-- Templates are customizable per organization
+- Supports SMS and Telegram bots for customer communication
+- Configurable timing with quiet hours and blackout periods
+- Customizable templates per organization for different notification types
+- Bulk notification capabilities for marketing and announcements
+- Scheduled notifications for booking reminders and follow-ups
 
 ## Application Configuration
 
