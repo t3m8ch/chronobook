@@ -1,3 +1,4 @@
+use axum::http::HeaderValue;
 use chrono::Duration;
 use dotenv::dotenv;
 
@@ -7,6 +8,7 @@ pub struct Config {
     pub jwt_refresh_secret: String,
     pub jwt_access_duration: Duration,
     pub jwt_refresh_duration: Duration,
+    pub jwt_cookie_allow_origin: HeaderValue,
     pub database_url: String,
 }
 
@@ -17,6 +19,8 @@ impl Config {
         let mut errors: Vec<String> = Vec::new();
 
         let server_addr = std::env::var("SERVER_ADDR").unwrap_or("0.0.0.0:3222".to_string());
+        let allow_origin =
+            std::env::var("ALLOW_ORIGIN").unwrap_or("http://localhost:3222".to_string());
         let access_secret = std::env::var("JWT_ACCESS_SECRET");
         let refresh_secret = std::env::var("JWT_REFRESH_SECRET");
         let access_duration_minutes: Result<i64, _> =
@@ -26,6 +30,9 @@ impl Config {
         let refresh_duration_days: Result<i64, _> = std::env::var("JWT_REFRESH_EXPIRATION_DAYS")
             .unwrap_or("7".to_string())
             .parse();
+        let jwt_cookie_allow_origin = std::env::var("JWT_COOKIE_ALLOW_ORIGIN")
+            .unwrap_or("http://localhost:3222".to_string())
+            .parse::<HeaderValue>();
         let database_url = std::env::var("DATABASE_URL");
 
         if let Err(_) = access_secret.clone() {
@@ -42,6 +49,10 @@ impl Config {
 
         if let Err(_) = refresh_duration_days.clone() {
             errors.push("JWT_REFRESH_EXPIRATION_DAYS must be a valid integer".to_string());
+        }
+
+        if jwt_cookie_allow_origin.is_err() {
+            errors.push("JWT_COOKIE_ALLOW_ORIGIN is not set".to_string());
         }
 
         if let Err(_) = database_url.clone() {
@@ -61,6 +72,7 @@ impl Config {
             jwt_refresh_secret: refresh_secret?,
             jwt_access_duration: Duration::minutes(access_duration_minutes?),
             jwt_refresh_duration: Duration::days(refresh_duration_days?),
+            jwt_cookie_allow_origin: jwt_cookie_allow_origin?,
             database_url: database_url?,
         })
     }

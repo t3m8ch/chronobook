@@ -1,8 +1,10 @@
 use axum::Router;
+use axum::http::Method;
+use axum::http::header;
 use axum_extra::extract::cookie::SameSite;
-use chrono::Duration;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
+use tower_http::cors::Any;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -132,13 +134,24 @@ async fn main() -> anyhow::Result<()> {
             telegram_provider.clone(),
             jwt_manager.clone(),
         )),
-        jwt_cookie_settings: JwtCookieSettings {
-            cookie_name: "refresh_token".to_string(),
-            http_only: true,
-            secure: true,
-            same_site: SameSite::Strict,
-            max_age: Duration::days(7),
-            path: "/".to_string(),
+        jwt_cookie_settings: if cfg!(debug_assertions) {
+            JwtCookieSettings {
+                cookie_name: "refresh_token".to_string(),
+                http_only: true,
+                secure: false,
+                same_site: SameSite::Lax,
+                max_age: config.jwt_refresh_duration,
+                path: "/".to_string(),
+            }
+        } else {
+            JwtCookieSettings {
+                cookie_name: "refresh_token".to_string(),
+                http_only: true,
+                secure: true,
+                same_site: SameSite::Lax,
+                max_age: config.jwt_refresh_duration,
+                path: "/".to_string(),
+            }
         },
     });
 
@@ -169,7 +182,13 @@ async fn main() -> anyhow::Result<()> {
             "/api/v1/openapi.json",
             axum::routing::get(move || async move { axum::Json(api) }),
         )
-        .layer(CorsLayer::permissive())
+        .layer(
+            CorsLayer::new()
+                .allow_credentials(true)
+                .allow_origin(config.jwt_cookie_allow_origin)
+                .allow_headers([header::AUTHORIZATION, header::ACCEPT, header::CONTENT_TYPE])
+                .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE]),
+        )
         .layer(TraceLayer::new_for_http());
 
     let listener = tokio::net::TcpListener::bind(&config.server_addr).await?;
