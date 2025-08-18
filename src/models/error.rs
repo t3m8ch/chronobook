@@ -35,6 +35,22 @@ impl ApiError {
         Self::new("BAD_REQUEST", message)
     }
 
+    pub fn invalid_verification_code(message: impl Into<String>) -> Self {
+        Self::new("INVALID_VERIFICATION_CODE", message)
+    }
+
+    pub fn verification_code_expired(message: impl Into<String>) -> Self {
+        Self::new("VERIFICATION_CODE_EXPIRED", message)
+    }
+
+    pub fn invalid_telegram_hash(message: impl Into<String>) -> Self {
+        Self::new("INVALID_TELEGRAM_HASH", message)
+    }
+
+    pub fn invalid_refresh_token(message: impl Into<String>) -> Self {
+        Self::new("INVALID_REFRESH_TOKEN", message)
+    }
+
     pub fn unauthorized(message: impl Into<String>) -> Self {
         Self::new("UNAUTHORIZED", message)
     }
@@ -56,10 +72,16 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status = match self.error.as_str() {
             "NOT_FOUND" => StatusCode::NOT_FOUND,
+            "BAD_REQUEST" => StatusCode::BAD_REQUEST,
             "VALIDATION_ERROR" => StatusCode::BAD_REQUEST,
+            "INVALID_VERIFICATION_CODE" => StatusCode::BAD_REQUEST,
+            "VERIFICATION_CODE_EXPIRED" => StatusCode::BAD_REQUEST,
+            "INVALID_TELEGRAM_HASH" => StatusCode::BAD_REQUEST,
+            "INVALID_REFRESH_TOKEN" => StatusCode::BAD_REQUEST,
             "UNAUTHORIZED" => StatusCode::UNAUTHORIZED,
             "FORBIDDEN" => StatusCode::FORBIDDEN,
             "CONFLICT" => StatusCode::CONFLICT,
+            "RATE_LIMIT_EXCEEDED" => StatusCode::TOO_MANY_REQUESTS,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         };
 

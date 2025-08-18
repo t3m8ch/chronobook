@@ -52,11 +52,19 @@ impl From<AuthServiceError> for crate::models::error::ApiError {
 
         match err {
             AuthServiceError::OrganizationNotFound(_) => ApiError::not_found(err.to_string()),
-            AuthServiceError::InvalidVerificationCode
-            | AuthServiceError::VerificationCodeExpired
-            | AuthServiceError::InvalidTelegramHash
-            | AuthServiceError::InvalidRefreshToken
-            | AuthServiceError::InvalidPhoneNumber => ApiError::bad_request(err.to_string()),
+            AuthServiceError::InvalidVerificationCode => {
+                ApiError::invalid_verification_code(err.to_string())
+            }
+            AuthServiceError::VerificationCodeExpired => {
+                ApiError::verification_code_expired(err.to_string())
+            }
+            AuthServiceError::InvalidTelegramHash => {
+                ApiError::invalid_telegram_hash(err.to_string())
+            }
+            AuthServiceError::InvalidRefreshToken => {
+                ApiError::invalid_refresh_token(err.to_string())
+            }
+            AuthServiceError::InvalidPhoneNumber => ApiError::bad_request(err.to_string()),
             AuthServiceError::UserNotFound | AuthServiceError::UserNotFoundById(_) => {
                 ApiError::not_found(err.to_string())
             }
