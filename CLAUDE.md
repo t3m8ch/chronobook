@@ -35,6 +35,7 @@ cargo test -- --nocapture  # Show println! output during tests
 ```
 /src/
 ├── main.rs              # Application entry point with Axum server and OpenAPI setup
+├── config.rs            # Application configuration management
 ├── api/                 # API layer
 │   ├── mod.rs          # API module definitions
 │   └── v1/             # Version 1 endpoints
@@ -174,6 +175,22 @@ bon = "4.0"       # For test data builders
 
 ## Application Configuration
 
+### Configuration Management
+The application uses a centralized `Config` struct in `src/config.rs` to manage all configuration settings:
+
+- **Config Structure**: All configuration is loaded through `Config::from_env()` in main.rs
+- **Environment Variables**: Configuration read from environment variables with sensible defaults
+- **Validation**: Comprehensive validation with detailed error messages for missing/invalid values
+- **Centralized**: All objects are configured in main.rs and passed to other components
+
+### Environment Variables
+- `SERVER_ADDR` - Server binding address (default: `0.0.0.0:3222`)
+- `JWT_ACCESS_SECRET` - Secret for signing access tokens (required)
+- `JWT_REFRESH_SECRET` - Secret for signing refresh tokens (required)  
+- `JWT_ACCESS_EXPIRATION_MINUTES` - Access token lifetime in minutes (default: 15)
+- `JWT_REFRESH_EXPIRATION_DAYS` - Refresh token lifetime in days (default: 7)
+- `DATABASE_URL` - PostgreSQL connection string (required)
+
 ### Server Setup
 - **Host**: Binds to `0.0.0.0:3222` (configurable via SERVER_ADDR env var)
 - **API Base Path**: `/api/v1`
@@ -246,6 +263,7 @@ The project is actively being developed with the following layers implemented:
 - Service error handling with thiserror
 - Database models in separate `db.rs` modules
 - HTTP-only cookie support for refresh tokens
+- Centralized configuration management with Config struct
 
 **🔄 In Progress:**
 - Full CRUD operations for all entities
@@ -297,4 +315,8 @@ The project is actively being developed with the following layers implemented:
    - Use async-trait for all async trait definitions
    - Apply proper module visibility and encapsulation
 
-- Не используй переменные окружения где-либо, кроме main.rs. Все объекты должны создаваться в main.rs, конфигурироваться в main.rs и передаваться в другие объекты в main.rs. Создаваемые объекты не должны знать, откуда читается конфигурация приложения
+8. **Configuration Management**
+   - Use the centralized `Config` struct for all configuration
+   - Load configuration only in main.rs using `Config::from_env()`
+   - Pass configuration values to components, never read environment variables directly in services/repositories
+   - Components should receive configuration through constructors, not environment access
