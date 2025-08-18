@@ -125,7 +125,7 @@ async fn main() -> anyhow::Result<()> {
 
     let pg_pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(&std::env::var("DATABASE_URL").unwrap())
+        .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await?;
 
     let state = Arc::new(AppState {
