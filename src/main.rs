@@ -1,5 +1,4 @@
 use axum::Router;
-use chrono::Duration;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
@@ -13,6 +12,7 @@ use utoipa_scalar::{Scalar, Servable};
 use crate::api::v1::{admin, auth, bookings};
 use crate::config::Config;
 use crate::repositories::auth::PgAuthRepository;
+use crate::services::auth::AuthService;
 use crate::services::auth::AuthServiceImpl;
 use crate::services::jwt::JwtManager;
 use crate::services::providers::MockSmsProvider;
@@ -26,7 +26,7 @@ mod services;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub auth_service: Arc<dyn crate::services::auth::AuthService>,
+    pub auth_service: Arc<dyn AuthService>,
 }
 
 struct SecurityAddon;
