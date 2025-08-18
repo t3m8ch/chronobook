@@ -41,7 +41,12 @@ cargo test -- --nocapture  # Show println! output during tests
 │       ├── mod.rs      # V1 module definitions
 │       ├── auth.rs     # Authentication endpoints (phone/telegram)
 │       ├── bookings.rs # Booking management endpoints
-│       └── admin.rs    # Admin endpoints (dashboard, CRUD operations)
+│       └── admin/      # Admin endpoints module
+│           ├── mod.rs      # Admin module with dashboard endpoint
+│           ├── branch.rs   # Branch CRUD operations
+│           ├── employee.rs # Employee CRUD operations
+│           ├── service.rs  # Service CRUD operations
+│           └── timetable.rs # Timetable and schedule management
 ├── models/             # Data models and DTOs
 │   ├── mod.rs          # Module definitions
 │   ├── error.rs        # ApiError type definition
@@ -157,6 +162,7 @@ The codebase uses `yare` for parameterized testing. Key practices:
 - **Runtime**: tokio 1.47 (async runtime)
 - **Web Framework**: axum 0.8 (web framework) + utoipa 5.4 (OpenAPI generation)
 - **OpenAPI UI**: utoipa-scalar 0.3 (Scalar UI for API documentation)
+- **OpenAPI Router**: utoipa-axum 0.2 (OpenAPI-aware routing)
 - **Database**: sqlx 0.8 with PostgreSQL (compile-time checked queries)
 - **Time**: chrono 0.4 for date/time handling
 - **Validation**: garde 0.22 for input validation
