@@ -43,6 +43,10 @@ pub trait AuthService: Send + Sync {
         &self,
         refresh_token: &str,
     ) -> Result<(String, String), AuthServiceError>;
+
+    async fn logout(&self, refresh_token: &str) -> Result<(), AuthServiceError>;
+
+    async fn logout_all(&self, refresh_token: &str) -> Result<(), AuthServiceError>;
 }
 
 pub struct AuthServiceImpl {
@@ -136,7 +140,7 @@ impl AuthService for AuthServiceImpl {
 
         // Generate tokens for phone verification (no specific organization context yet)
         let user_types = vec![];
-        
+
         let access_token = self
             .jwt_manager
             .generate_access_token(user.id, None, user_types.clone())
@@ -145,6 +149,7 @@ impl AuthService for AuthServiceImpl {
         let refresh_token = self
             .jwt_manager
             .generate_refresh_token(user.id, None, user_types)
+            .await
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         Ok((access_token, refresh_token))
@@ -218,7 +223,7 @@ impl AuthService for AuthServiceImpl {
 
         // Generate tokens for telegram verification (no specific organization context yet)
         let user_types = vec![];
-        
+
         let access_token = self
             .jwt_manager
             .generate_access_token(user.id, None, user_types.clone())
@@ -227,6 +232,7 @@ impl AuthService for AuthServiceImpl {
         let refresh_token = self
             .jwt_manager
             .generate_refresh_token(user.id, None, user_types)
+            .await
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         Ok((access_token, refresh_token))
@@ -240,6 +246,7 @@ impl AuthService for AuthServiceImpl {
         let token_data = self
             .jwt_manager
             .verify_refresh_token(refresh_token)
+            .await
             .map_err(|_| AuthServiceError::InvalidRefreshToken)?;
 
         // Check if user still exists
@@ -252,15 +259,41 @@ impl AuthService for AuthServiceImpl {
         // Generate new tokens with existing user types
         let new_access_token = self
             .jwt_manager
-            .generate_access_token(user.id, token_data.claims.org, token_data.claims.user_types.clone())
+            .generate_access_token(
+                user.id,
+                token_data.claims.org,
+                token_data.claims.user_types.clone(),
+            )
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         let new_refresh_token = self
             .jwt_manager
             .generate_refresh_token(user.id, token_data.claims.org, token_data.claims.user_types)
+            .await
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         Ok((new_access_token, new_refresh_token))
+    }
+
+    async fn logout(&self, refresh_token: &str) -> Result<(), AuthServiceError> {
+        self.jwt_manager
+            .revoke_refresh_token(refresh_token)
+            .await
+            .map_err(|_| AuthServiceError::InvalidRefreshToken)
+    }
+
+    async fn logout_all(&self, refresh_token: &str) -> Result<(), AuthServiceError> {
+        // First verify the token to get user ID
+        let token_data = self
+            .jwt_manager
+            .verify_refresh_token(refresh_token)
+            .await
+            .map_err(|_| AuthServiceError::InvalidRefreshToken)?;
+
+        self.jwt_manager
+            .revoke_all_user_tokens(token_data.claims.sub)
+            .await
+            .map_err(|_| AuthServiceError::InvalidRefreshToken)
     }
 }
 
@@ -288,6 +321,16 @@ mod tests {
         mock_sms: MockSmsProvider,
         mock_telegram: MockTelegramProvider,
     ) -> AuthServiceImpl {
+        use crate::services::token_store::MockTokenStore;
+
+        let mut mock_token_store = MockTokenStore::new();
+        mock_token_store
+            .expect_whitelist_token()
+            .returning(|_, _, _| Ok(()));
+        mock_token_store
+            .expect_is_token_whitelisted()
+            .returning(|_| Ok(true));
+
         AuthServiceImpl::new(
             Arc::new(mock_repo),
             Arc::new(mock_sms),
@@ -296,6 +339,7 @@ mod tests {
                 JwtManager::builder()
                     .access_secret("secret")
                     .refresh_secret("secret")
+                    .token_store(Arc::new(mock_token_store))
                     .build(),
             ),
         )
@@ -360,6 +404,17 @@ mod tests {
                 JwtManager::builder()
                     .access_secret("secret")
                     .refresh_secret("secret")
+                    .token_store({
+                        use crate::services::token_store::MockTokenStore;
+                        let mut mock_token_store = MockTokenStore::new();
+                        mock_token_store
+                            .expect_whitelist_token()
+                            .returning(|_, _, _| Ok(()));
+                        mock_token_store
+                            .expect_is_token_whitelisted()
+                            .returning(|_| Ok(true));
+                        Arc::new(mock_token_store)
+                    })
                     .build(),
             ),
         );
@@ -533,6 +588,17 @@ mod tests {
         let jwt_manager = JwtManager::builder()
             .access_secret("secret")
             .refresh_secret("secret")
+            .token_store({
+                use crate::services::token_store::MockTokenStore;
+                let mut mock_token_store = MockTokenStore::new();
+                mock_token_store
+                    .expect_whitelist_token()
+                    .returning(|_, _, _| Ok(()));
+                mock_token_store
+                    .expect_is_token_whitelisted()
+                    .returning(|_| Ok(true));
+                Arc::new(mock_token_store)
+            })
             .build();
 
         let user_types = vec![UserType::Customer {
@@ -541,6 +607,7 @@ mod tests {
         }];
         let refresh_token = jwt_manager
             .generate_refresh_token(user.id, Some(org_id), user_types)
+            .await
             .unwrap();
 
         let mut mock_repo = MockAuthRepository::new();

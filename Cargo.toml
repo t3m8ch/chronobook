@@ -37,3 +37,4 @@ axum-extra = { version = "0.10", features = ["cookie"] }
 time = "0.3"
 hex = "0.4"
 bon = "3.7.0"
+redis = { version = "0.26", features = ["tokio-comp"] }

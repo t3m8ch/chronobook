@@ -22,6 +22,8 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
         .routes(routes!(login_telegram))
         .routes(routes!(verify_telegram))
         .routes(routes!(refresh))
+        .routes(routes!(logout))
+        .routes(routes!(logout_all))
 }
 
 #[utoipa::path(
@@ -143,6 +145,76 @@ fn token_cookie<'a>(settings: &JwtCookieSettings, token: String) -> Cookie<'a> {
         .path(settings.path.clone())
         .max_age(chrono_duration_to_time(settings.max_age))
         .build()
+}
+
+#[utoipa::path(
+    post,
+    path = "/logout",
+    responses(
+        (status = 200, description = "Logout successful"),
+        (status = 400, description = "Bad request", body = ApiError),
+        (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    tag = "auth"
+)]
+#[tracing::instrument(skip(state, jar))]
+pub async fn logout(
+    State(state): State<Arc<AppState>>,
+    jar: CookieJar,
+) -> Result<impl IntoResponse, ApiError> {
+    if let Some(refresh_token) = jar.get("refresh_token") {
+        // Try to revoke the token, but don't fail if it's already invalid
+        let _ = state.auth_service.logout(refresh_token.value()).await;
+    }
+
+    // Remove the cookie
+    let expired_cookie = Cookie::build(("refresh_token", ""))
+        .http_only(true)
+        .secure(true)
+        .same_site(axum_extra::extract::cookie::SameSite::Strict)
+        .path("/")
+        .max_age(time::Duration::ZERO)
+        .build();
+
+    Ok((
+        jar.add(expired_cookie),
+        Json(serde_json::json!({"message": "Logged out successfully"})),
+    ))
+}
+
+#[utoipa::path(
+    post,
+    path = "/logout/all",
+    responses(
+        (status = 200, description = "Logout from all devices successful"),
+        (status = 400, description = "Bad request", body = ApiError),
+        (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    tag = "auth"
+)]
+#[tracing::instrument(skip(state, jar))]
+pub async fn logout_all(
+    State(state): State<Arc<AppState>>,
+    jar: CookieJar,
+) -> Result<impl IntoResponse, ApiError> {
+    if let Some(refresh_token) = jar.get("refresh_token") {
+        // Try to revoke all user tokens
+        let _ = state.auth_service.logout_all(refresh_token.value()).await;
+    }
+
+    // Remove the cookie
+    let expired_cookie = Cookie::build(("refresh_token", ""))
+        .http_only(true)
+        .secure(true)
+        .same_site(axum_extra::extract::cookie::SameSite::Strict)
+        .path("/")
+        .max_age(time::Duration::ZERO)
+        .build();
+
+    Ok((
+        jar.add(expired_cookie),
+        Json(serde_json::json!({"message": "Logged out from all devices successfully"})),
+    ))
 }
 
 fn chrono_duration_to_time(duration: chrono::Duration) -> time::Duration {

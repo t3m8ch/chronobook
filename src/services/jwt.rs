@@ -2,7 +2,10 @@ use bon::Builder;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, TokenData, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use uuid::Uuid;
+
+use super::token_store::{TokenStore, TokenStoreError};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -10,6 +13,7 @@ pub struct Claims {
     pub org: Option<Uuid>, // Organization ID for customers
     pub exp: i64,          // Expiration time
     pub iat: i64,          // Issued at
+    pub jti: String,       // JWT ID for token tracking
     pub token_type: TokenType,
     pub user_types: Vec<UserType>,
 }
@@ -44,7 +48,19 @@ pub enum UserRole {
     Master,
 }
 
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, thiserror::Error)]
+pub enum JwtError {
+    #[error("JWT encoding/decoding error: {0}")]
+    Jwt(#[from] jsonwebtoken::errors::Error),
+    #[error("Token store error: {0}")]
+    TokenStore(#[from] TokenStoreError),
+    #[error("Invalid token type")]
+    InvalidTokenType,
+    #[error("Token not whitelisted")]
+    TokenNotWhitelisted,
+}
+
+#[derive(Clone, Builder)]
 #[builder(on(String, into))]
 pub struct JwtManager {
     access_secret: String,
@@ -56,6 +72,8 @@ pub struct JwtManager {
 
     #[builder(default = Duration::days(7))]
     refresh_duration: Duration,
+
+    token_store: Arc<dyn TokenStore>,
 }
 
 impl JwtManager {
@@ -64,55 +82,64 @@ impl JwtManager {
         user_id: Uuid,
         organization_id: Option<Uuid>,
         user_types: Vec<UserType>,
-    ) -> Result<String, jsonwebtoken::errors::Error> {
+    ) -> Result<String, JwtError> {
         let now = Utc::now();
         let exp = now + self.access_duration;
+        let jti = Uuid::now_v7().to_string();
 
         let claims = Claims {
             sub: user_id,
             org: organization_id,
             exp: exp.timestamp(),
             iat: now.timestamp(),
+            jti,
             token_type: TokenType::Access,
             user_types,
         };
 
-        encode(
+        let token = encode(
             &Header::default(),
             &claims,
             &EncodingKey::from_secret(self.access_secret.as_bytes()),
-        )
+        )?;
+
+        Ok(token)
     }
 
-    pub fn generate_refresh_token(
+    pub async fn generate_refresh_token(
         &self,
         user_id: Uuid,
         organization_id: Option<Uuid>,
         user_types: Vec<UserType>,
-    ) -> Result<String, jsonwebtoken::errors::Error> {
+    ) -> Result<String, JwtError> {
         let now = Utc::now();
         let exp = now + self.refresh_duration;
+        let jti = Uuid::now_v7().to_string();
 
         let claims = Claims {
             sub: user_id,
             org: organization_id,
             exp: exp.timestamp(),
             iat: now.timestamp(),
+            jti: jti.clone(),
             token_type: TokenType::Refresh,
             user_types,
         };
 
-        encode(
+        let token = encode(
             &Header::default(),
             &claims,
             &EncodingKey::from_secret(self.refresh_secret.as_bytes()),
-        )
+        )?;
+
+        // Add token to whitelist
+        let ttl = std::time::Duration::from_secs(self.refresh_duration.num_seconds() as u64);
+        self.token_store.whitelist_token(&jti, user_id, ttl).await?;
+
+        Ok(token)
     }
 
-    pub fn verify_access_token(
-        &self,
-        token: &str,
-    ) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error> {
+    pub fn verify_access_token(&self, token: &str) -> Result<TokenData<Claims>, JwtError> {
         let mut validation = Validation::default();
         validation.validate_exp = true;
 
@@ -123,18 +150,13 @@ impl JwtManager {
         )?;
 
         if token_data.claims.token_type != TokenType::Access {
-            return Err(jsonwebtoken::errors::Error::from(
-                jsonwebtoken::errors::ErrorKind::InvalidToken,
-            ));
+            return Err(JwtError::InvalidTokenType);
         }
 
         Ok(token_data)
     }
 
-    pub fn verify_refresh_token(
-        &self,
-        token: &str,
-    ) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error> {
+    pub async fn verify_refresh_token(&self, token: &str) -> Result<TokenData<Claims>, JwtError> {
         let mut validation = Validation::default();
         validation.validate_exp = true;
 
@@ -145,24 +167,73 @@ impl JwtManager {
         )?;
 
         if token_data.claims.token_type != TokenType::Refresh {
-            return Err(jsonwebtoken::errors::Error::from(
-                jsonwebtoken::errors::ErrorKind::InvalidToken,
-            ));
+            return Err(JwtError::InvalidTokenType);
+        }
+
+        // Check if token is whitelisted
+        let is_whitelisted = self
+            .token_store
+            .is_token_whitelisted(&token_data.claims.jti)
+            .await?;
+        if !is_whitelisted {
+            return Err(JwtError::TokenNotWhitelisted);
         }
 
         Ok(token_data)
+    }
+
+    /// Revoke a refresh token (logout)
+    pub async fn revoke_refresh_token(&self, token: &str) -> Result<(), JwtError> {
+        let token_data = decode::<Claims>(
+            token,
+            &DecodingKey::from_secret(self.refresh_secret.as_bytes()),
+            &Validation::default(),
+        )?;
+
+        if token_data.claims.token_type != TokenType::Refresh {
+            return Err(JwtError::InvalidTokenType);
+        }
+
+        self.token_store
+            .remove_token(&token_data.claims.jti)
+            .await?;
+        Ok(())
+    }
+
+    /// Revoke all refresh tokens for a user (logout from all devices)
+    pub async fn revoke_all_user_tokens(&self, user_id: Uuid) -> Result<(), JwtError> {
+        self.token_store.remove_all_user_tokens(user_id).await?;
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::token_store::MockTokenStore;
+    use std::time::Duration as StdDuration;
+
+    fn create_mock_token_store() -> Arc<MockTokenStore> {
+        let mut mock_store = MockTokenStore::new();
+
+        // Setup default expectations for whitelist operations
+        mock_store
+            .expect_whitelist_token()
+            .returning(|_, _, _| Ok(()));
+
+        mock_store
+            .expect_is_token_whitelisted()
+            .returning(|_| Ok(true));
+
+        Arc::new(mock_store)
+    }
 
     #[test]
     fn test_generate_and_verify_access_token() {
         let jwt_manager = JwtManager::builder()
             .access_secret("secret")
             .refresh_secret("secret")
+            .token_store(create_mock_token_store())
             .build();
         let user_id = Uuid::now_v7();
         let org_id = Some(Uuid::now_v7());
@@ -183,13 +254,15 @@ mod tests {
         assert_eq!(token_data.claims.org, org_id);
         assert_eq!(token_data.claims.token_type, TokenType::Access);
         assert_eq!(token_data.claims.user_types, user_types);
+        assert!(!token_data.claims.jti.is_empty());
     }
 
-    #[test]
-    fn test_generate_and_verify_refresh_token() {
+    #[tokio::test]
+    async fn test_generate_and_verify_refresh_token() {
         let jwt_manager = JwtManager::builder()
             .access_secret("secret")
             .refresh_secret("secret")
+            .token_store(create_mock_token_store())
             .build();
         let user_id = Uuid::now_v7();
         let org_id = Some(Uuid::now_v7());
@@ -202,23 +275,27 @@ mod tests {
 
         let token = jwt_manager
             .generate_refresh_token(user_id, org_id, user_types.clone())
+            .await
             .expect("Failed to generate refresh token");
 
         let token_data = jwt_manager
             .verify_refresh_token(&token)
+            .await
             .expect("Failed to verify refresh token");
 
         assert_eq!(token_data.claims.sub, user_id);
         assert_eq!(token_data.claims.org, org_id);
         assert_eq!(token_data.claims.token_type, TokenType::Refresh);
         assert_eq!(token_data.claims.user_types, user_types);
+        assert!(!token_data.claims.jti.is_empty());
     }
 
-    #[test]
-    fn test_invalid_token_type() {
+    #[tokio::test]
+    async fn test_invalid_token_type() {
         let jwt_manager = JwtManager::builder()
             .access_secret("secret")
             .refresh_secret("secret")
+            .token_store(create_mock_token_store())
             .build();
 
         let user_id = Uuid::now_v7();
@@ -230,9 +307,45 @@ mod tests {
 
         let refresh_token = jwt_manager
             .generate_refresh_token(user_id, Some(org_id), user_types)
+            .await
             .expect("Failed to generate refresh token");
 
         let result = jwt_manager.verify_access_token(&refresh_token);
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_token_not_whitelisted() {
+        let mut mock_store = MockTokenStore::new();
+
+        mock_store
+            .expect_whitelist_token()
+            .returning(|_, _, _| Ok(()));
+
+        // Token will not be found in whitelist
+        mock_store
+            .expect_is_token_whitelisted()
+            .returning(|_| Ok(false));
+
+        let jwt_manager = JwtManager::builder()
+            .access_secret("secret")
+            .refresh_secret("secret")
+            .token_store(Arc::new(mock_store))
+            .build();
+
+        let user_id = Uuid::now_v7();
+        let org_id = Some(Uuid::now_v7());
+        let user_types = vec![UserType::Customer {
+            id: user_id,
+            org_id: org_id.unwrap(),
+        }];
+
+        let token = jwt_manager
+            .generate_refresh_token(user_id, org_id, user_types)
+            .await
+            .expect("Failed to generate refresh token");
+
+        let result = jwt_manager.verify_refresh_token(&token).await;
+        assert!(matches!(result, Err(JwtError::TokenNotWhitelisted)));
     }
 }

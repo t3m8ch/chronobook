@@ -10,6 +10,7 @@ pub struct Config {
     pub jwt_refresh_duration: Duration,
     pub jwt_cookie_allow_origin: HeaderValue,
     pub database_url: String,
+    pub redis_url: String,
 }
 
 impl Config {
@@ -34,6 +35,7 @@ impl Config {
             .unwrap_or("http://localhost:3222".to_string())
             .parse::<HeaderValue>();
         let database_url = std::env::var("DATABASE_URL");
+        let redis_url = std::env::var("REDIS_URL").unwrap_or("redis://127.0.0.1:6379".to_string());
 
         if let Err(_) = access_secret.clone() {
             errors.push("JWT_ACCESS_SECRET is not set".to_string());
@@ -74,6 +76,7 @@ impl Config {
             jwt_refresh_duration: Duration::days(refresh_duration_days?),
             jwt_cookie_allow_origin: jwt_cookie_allow_origin?,
             database_url: database_url?,
+            redis_url,
         })
     }
 }
