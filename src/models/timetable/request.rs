@@ -26,14 +26,15 @@ pub struct CreateDayRedefinitionRequest {
     pub schedule_day: ScheduleDayIn,
 }
 
-// TODO: refactor this
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ScheduleDayIn {
-    pub branch_id: Option<Uuid>,
-    pub working_interval: Option<Interval>,
-    pub break_intervals: Option<Vec<Interval>>,
-    pub day_type: ScheduleDayType,
+#[serde(rename_all = "camelCase", tag = "dayType")]
+pub enum ScheduleDayIn {
+    Weekday {
+        branch_id: Uuid,
+        working_interval: Interval,
+        break_intervals: Vec<Interval>,
+    },
+    Weekend,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
@@ -41,13 +42,6 @@ pub struct ScheduleDayIn {
 pub struct Interval {
     pub start: DateTime<Utc>,
     pub end: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub enum ScheduleDayType {
-    Weekday,
-    Weekend,
 }
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize)]
