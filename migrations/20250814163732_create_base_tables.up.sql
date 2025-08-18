@@ -174,3 +174,64 @@ CREATE TABLE telegram_verify_hashes (
     user_id UUID NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+-- Настройки уведомлений на уровне филиала
+CREATE TABLE notification_settings (
+    branch_id UUID PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    
+    -- Тихие часы (в часовом поясе филиала)
+    quiet_hours_start TIME NOT NULL DEFAULT '22:00:00', 
+    quiet_hours_end TIME NOT NULL DEFAULT '08:00:00',
+    
+    -- Граница для умной логики (часы)
+    smart_boundary_hours INTEGER NOT NULL DEFAULT 12,
+    
+    -- Критический порог (часы)
+    critical_threshold_hours INTEGER NOT NULL DEFAULT 3,
+    
+    FOREIGN KEY (branch_id) REFERENCES branches(id)
+);
+
+-- Шаблоны уведомлений (редактируемые)
+CREATE TABLE notification_templates (
+    id UUID PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    
+    branch_id UUID NOT NULL,
+    template_type VARCHAR(50) NOT NULL, -- 'booking_reminder', 'booking_confirmed', etc.
+    method notify_method NOT NULL,
+    
+    body TEXT NOT NULL,
+    
+    FOREIGN KEY (branch_id) REFERENCES branches(id),
+    UNIQUE (branch_id, template_type, method)
+);
+
+-- Статус уведомлений
+CREATE TYPE notification_status AS ENUM ('pending', 'sent', 'failed', 'cancelled');
+
+-- Запланированные уведомления
+CREATE TABLE scheduled_notifications (
+    id UUID PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    
+    booking_id UUID NOT NULL,
+    method notify_method NOT NULL,
+    template_id UUID NOT NULL,
+    
+    -- Когда должно быть отправлено (по умолчанию)
+    scheduled_at TIMESTAMP NOT NULL,
+    -- Когда будет отправлено (после умной логики)
+    actual_send_at TIMESTAMP NOT NULL,
+    
+    sent_at TIMESTAMP,
+    status notification_status NOT NULL DEFAULT 'pending',
+    error_message TEXT,
+    
+    FOREIGN KEY (booking_id) REFERENCES bookings(id),
+    FOREIGN KEY (template_id) REFERENCES notification_templates(id)
+);

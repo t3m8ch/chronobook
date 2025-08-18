@@ -1,4 +1,8 @@
 -- Add down migration script here
+DROP TABLE IF EXISTS scheduled_notifications;
+DROP TABLE IF EXISTS notification_templates;
+DROP TABLE IF EXISTS notification_settings;
+
 DROP TABLE IF EXISTS telegram_verify_hashes;
 DROP TABLE IF EXISTS phone_verify_codes;
 
@@ -19,6 +23,7 @@ DROP TABLE IF EXISTS organizations;
 DROP TABLE IF EXISTS user_profiles;
 DROP TABLE IF EXISTS users;
 
+DROP TYPE IF EXISTS notification_status;
 DROP TYPE IF EXISTS booking_status;
 DROP TYPE IF EXISTS notify_method;
 
