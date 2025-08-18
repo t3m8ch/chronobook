@@ -296,3 +296,5 @@ The project is actively being developed with the following layers implemented:
    - Follow the established directory structure
    - Use async-trait for all async trait definitions
    - Apply proper module visibility and encapsulation
+
+- Не используй переменные окружения где-либо, кроме main.rs. Все объекты должны создаваться в main.rs, конфигурироваться в main.rs и передаваться в другие объекты в main.rs. Создаваемые объекты не должны знать, откуда читается конфигурация приложения
