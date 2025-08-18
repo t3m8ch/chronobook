@@ -15,7 +15,6 @@ use crate::api::v1::{admin, auth, bookings};
 use crate::repositories::auth::PgAuthRepository;
 use crate::services::auth::AuthServiceImpl;
 use crate::services::jwt::JwtManager;
-use crate::services::jwt::JwtManagerBuilder;
 use crate::services::providers::MockSmsProvider;
 use crate::services::providers::MockTelegramProvider;
 
