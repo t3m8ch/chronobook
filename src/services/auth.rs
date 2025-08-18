@@ -11,6 +11,9 @@ use crate::{
     services::jwt::JwtManager,
 };
 
+#[cfg(test)]
+use crate::services::jwt::UserType;
+
 use super::{
     errors::AuthServiceError,
     providers::{SmsProvider, TelegramProvider},
@@ -131,15 +134,17 @@ impl AuthService for AuthServiceImpl {
             self.auth_repo.update_user_phone_verified(user.id).await?;
         }
 
-        // Generate tokens without organization context
+        // Generate tokens for phone verification (no specific organization context yet)
+        let user_types = vec![];
+        
         let access_token = self
             .jwt_manager
-            .generate_access_token(user.id, None)
+            .generate_access_token(user.id, None, user_types.clone())
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         let refresh_token = self
             .jwt_manager
-            .generate_refresh_token(user.id, None)
+            .generate_refresh_token(user.id, None, user_types)
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         Ok((access_token, refresh_token))
@@ -211,15 +216,17 @@ impl AuthService for AuthServiceImpl {
                 .await?;
         }
 
-        // Generate tokens without organization context
+        // Generate tokens for telegram verification (no specific organization context yet)
+        let user_types = vec![];
+        
         let access_token = self
             .jwt_manager
-            .generate_access_token(user.id, None)
+            .generate_access_token(user.id, None, user_types.clone())
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         let refresh_token = self
             .jwt_manager
-            .generate_refresh_token(user.id, None)
+            .generate_refresh_token(user.id, None, user_types)
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         Ok((access_token, refresh_token))
@@ -242,15 +249,15 @@ impl AuthService for AuthServiceImpl {
             .await?
             .ok_or(AuthServiceError::UserNotFoundById(token_data.claims.sub))?;
 
-        // Generate new tokens
+        // Generate new tokens with existing user types
         let new_access_token = self
             .jwt_manager
-            .generate_access_token(user.id, token_data.claims.org)
+            .generate_access_token(user.id, token_data.claims.org, token_data.claims.user_types.clone())
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         let new_refresh_token = self
             .jwt_manager
-            .generate_refresh_token(user.id, token_data.claims.org)
+            .generate_refresh_token(user.id, token_data.claims.org, token_data.claims.user_types)
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         Ok((new_access_token, new_refresh_token))
@@ -528,8 +535,12 @@ mod tests {
             .refresh_secret("secret")
             .build();
 
+        let user_types = vec![UserType::Customer {
+            id: user.id,
+            org_id,
+        }];
         let refresh_token = jwt_manager
-            .generate_refresh_token(user.id, Some(org_id))
+            .generate_refresh_token(user.id, Some(org_id), user_types)
             .unwrap();
 
         let mut mock_repo = MockAuthRepository::new();

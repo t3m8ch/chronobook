@@ -11,6 +11,7 @@ pub struct Claims {
     pub exp: i64,          // Expiration time
     pub iat: i64,          // Issued at
     pub token_type: TokenType,
+    pub user_types: Vec<UserType>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -18,6 +19,29 @@ pub struct Claims {
 pub enum TokenType {
     Access,
     Refresh,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case", tag = "type")]
+pub enum UserType {
+    Customer {
+        id: Uuid,
+        org_id: Uuid,
+    },
+    Employee {
+        id: Uuid,
+        roles: Vec<UserRole>,
+        org_id: Uuid,
+        master_branch_id: Option<Uuid>,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case", tag = "type")]
+pub enum UserRole {
+    Owner,
+    Manager,
+    Master,
 }
 
 #[derive(Debug, Clone, Builder)]
@@ -39,6 +63,7 @@ impl JwtManager {
         &self,
         user_id: Uuid,
         organization_id: Option<Uuid>,
+        user_types: Vec<UserType>,
     ) -> Result<String, jsonwebtoken::errors::Error> {
         let now = Utc::now();
         let exp = now + self.access_duration;
@@ -49,6 +74,7 @@ impl JwtManager {
             exp: exp.timestamp(),
             iat: now.timestamp(),
             token_type: TokenType::Access,
+            user_types,
         };
 
         encode(
@@ -62,6 +88,7 @@ impl JwtManager {
         &self,
         user_id: Uuid,
         organization_id: Option<Uuid>,
+        user_types: Vec<UserType>,
     ) -> Result<String, jsonwebtoken::errors::Error> {
         let now = Utc::now();
         let exp = now + self.refresh_duration;
@@ -72,6 +99,7 @@ impl JwtManager {
             exp: exp.timestamp(),
             iat: now.timestamp(),
             token_type: TokenType::Refresh,
+            user_types,
         };
 
         encode(
@@ -138,9 +166,13 @@ mod tests {
             .build();
         let user_id = Uuid::now_v7();
         let org_id = Some(Uuid::now_v7());
+        let user_types = vec![UserType::Customer {
+            id: user_id,
+            org_id: org_id.unwrap(),
+        }];
 
         let token = jwt_manager
-            .generate_access_token(user_id, org_id)
+            .generate_access_token(user_id, org_id, user_types.clone())
             .expect("Failed to generate access token");
 
         let token_data = jwt_manager
@@ -150,6 +182,7 @@ mod tests {
         assert_eq!(token_data.claims.sub, user_id);
         assert_eq!(token_data.claims.org, org_id);
         assert_eq!(token_data.claims.token_type, TokenType::Access);
+        assert_eq!(token_data.claims.user_types, user_types);
     }
 
     #[test]
@@ -159,10 +192,16 @@ mod tests {
             .refresh_secret("secret")
             .build();
         let user_id = Uuid::now_v7();
-        let org_id = None;
+        let org_id = Some(Uuid::now_v7());
+        let user_types = vec![UserType::Employee {
+            id: user_id,
+            roles: vec![UserRole::Manager],
+            org_id: org_id.unwrap(),
+            master_branch_id: None,
+        }];
 
         let token = jwt_manager
-            .generate_refresh_token(user_id, org_id)
+            .generate_refresh_token(user_id, org_id, user_types.clone())
             .expect("Failed to generate refresh token");
 
         let token_data = jwt_manager
@@ -172,6 +211,7 @@ mod tests {
         assert_eq!(token_data.claims.sub, user_id);
         assert_eq!(token_data.claims.org, org_id);
         assert_eq!(token_data.claims.token_type, TokenType::Refresh);
+        assert_eq!(token_data.claims.user_types, user_types);
     }
 
     #[test]
@@ -182,9 +222,14 @@ mod tests {
             .build();
 
         let user_id = Uuid::now_v7();
+        let org_id = Uuid::now_v7();
+        let user_types = vec![UserType::Customer {
+            id: user_id,
+            org_id,
+        }];
 
         let refresh_token = jwt_manager
-            .generate_refresh_token(user_id, None)
+            .generate_refresh_token(user_id, Some(org_id), user_types)
             .expect("Failed to generate refresh token");
 
         let result = jwt_manager.verify_access_token(&refresh_token);
