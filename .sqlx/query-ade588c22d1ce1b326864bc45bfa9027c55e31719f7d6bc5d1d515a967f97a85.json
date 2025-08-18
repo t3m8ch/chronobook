@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM phone_verify_codes\n            WHERE expire_at < $1 OR used = true\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamp"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ade588c22d1ce1b326864bc45bfa9027c55e31719f7d6bc5d1d515a967f97a85"
+}

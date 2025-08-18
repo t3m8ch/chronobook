@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE phone_verify_codes\n            SET used = true\n            WHERE id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "116270aac9e86728355c138fbfea2e63a36fd7ee9c8df6b2affe861e15e0ab96"
+}

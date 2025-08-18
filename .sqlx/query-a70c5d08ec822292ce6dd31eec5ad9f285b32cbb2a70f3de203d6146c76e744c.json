@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE telegram_verify_hashes\n            SET used = true\n            WHERE id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a70c5d08ec822292ce6dd31eec5ad9f285b32cbb2a70f3de203d6146c76e744c"
+}

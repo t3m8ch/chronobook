@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM telegram_verify_hashes\n            WHERE expire_at < $1 OR used = true\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamp"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ef44b6213c9ba97a6ecb2619be63e03cdda3e079bf22779bbd41023a5cf942f9"
+}
