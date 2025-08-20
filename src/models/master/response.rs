@@ -20,4 +20,6 @@ pub struct GetMastersQuery {
     pub organization_name: String,
     #[serde(default)]
     pub branches: Vec<Uuid>,
+    #[serde(default)]
+    pub services: Vec<Uuid>,
 }

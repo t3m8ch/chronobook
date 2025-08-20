@@ -34,7 +34,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     get,
     path = "/organizations/{organization_name}",
     params(
-        ("organization_name" = String, Path, description = "Organization name")
+        ("organization_name" = String, Path, description = "Organization name"),
     ),
     responses(
         (status = 200, description = "Organization with name", body = OrganizationOut),
@@ -56,7 +56,8 @@ pub async fn get_organization_by_name(
     get,
     path = "/services",
     params(
-        ("organization_name" = String, Query, description = "Organization name")
+        ("organization_name" = String, Query, description = "Organization name"),
+        ("masters[]" = Vec<Uuid>, Query, description = "Master IDs filter")
     ),
     responses(
         (status = 200, description = "List of services", body = Vec<ServiceOut>),
@@ -78,7 +79,8 @@ pub async fn get_services(
     path = "/masters",
     params(
         ("organization_name" = String, Query, description = "Organization name"),
-        ("branches[]" = Vec<Uuid>, Query, description = "Branch IDs filter")
+        ("branches[]" = Vec<Uuid>, Query, description = "Branch IDs filter"),
+        ("services[]" = Vec<Uuid>, Query, description = "Service IDs filter"),
     ),
     responses(
         (status = 200, description = "List of masters", body = Vec<MasterOut>),

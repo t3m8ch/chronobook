@@ -32,4 +32,5 @@ pub struct UpdateServiceRequest {
 #[serde(rename_all = "camelCase")]
 pub struct GetServicesQuery {
     pub organization_name: String,
+    pub masters: Vec<Uuid>,
 }
