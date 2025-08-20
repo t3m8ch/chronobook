@@ -10,7 +10,6 @@ use crate::models::auth::db::{
 #[mockall::automock]
 #[async_trait]
 pub trait AuthRepository: Send + Sync {
-    async fn find_organization_by_name(&self, name: &str) -> Result<Option<Organization>>;
     async fn find_user_by_phone(&self, phone: &str) -> Result<Option<User>>;
     async fn find_user_by_telegram_id(&self, telegram_id: i64) -> Result<Option<User>>;
     async fn find_user_by_id(&self, id: Uuid) -> Result<Option<User>>;
@@ -70,20 +69,6 @@ impl PgAuthRepository {
 
 #[async_trait]
 impl AuthRepository for PgAuthRepository {
-    async fn find_organization_by_name(&self, name: &str) -> Result<Option<Organization>> {
-        sqlx::query_as!(
-            Organization,
-            r#"
-            SELECT id, created_at, updated_at, name, display_name, description
-            FROM organizations
-            WHERE name = $1
-            "#,
-            name
-        )
-        .fetch_optional(&self.pool)
-        .await
-    }
-
     async fn find_user_by_phone(&self, phone: &str) -> Result<Option<User>> {
         sqlx::query_as!(
             User,
