@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use super::token_store::{TokenStore, TokenStoreError};
+use crate::repositories::token::{TokenRepository, TokenRepositoryError};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -52,8 +52,8 @@ pub enum UserRole {
 pub enum JwtError {
     #[error("JWT encoding/decoding error: {0}")]
     Jwt(#[from] jsonwebtoken::errors::Error),
-    #[error("Token store error: {0}")]
-    TokenStore(#[from] TokenStoreError),
+    #[error("Token repository error: {0}")]
+    TokenRepository(#[from] TokenRepositoryError),
     #[error("Invalid token type")]
     InvalidTokenType,
     #[error("Token not whitelisted")]
@@ -73,7 +73,7 @@ pub struct JwtManager {
     #[builder(default = Duration::days(7))]
     refresh_duration: Duration,
 
-    token_store: Arc<dyn TokenStore>,
+    token_repository: Arc<dyn TokenRepository>,
 }
 
 impl JwtManager {
@@ -134,7 +134,9 @@ impl JwtManager {
 
         // Add token to whitelist
         let ttl = std::time::Duration::from_secs(self.refresh_duration.num_seconds() as u64);
-        self.token_store.whitelist_token(&jti, user_id, ttl).await?;
+        self.token_repository
+            .whitelist_token(&jti, user_id, ttl)
+            .await?;
 
         Ok(token)
     }
@@ -172,7 +174,7 @@ impl JwtManager {
 
         // Check if token is whitelisted
         let is_whitelisted = self
-            .token_store
+            .token_repository
             .is_token_whitelisted(&token_data.claims.jti)
             .await?;
         if !is_whitelisted {
@@ -194,7 +196,7 @@ impl JwtManager {
             return Err(JwtError::InvalidTokenType);
         }
 
-        self.token_store
+        self.token_repository
             .remove_token(&token_data.claims.jti)
             .await?;
         Ok(())
@@ -202,7 +204,9 @@ impl JwtManager {
 
     /// Revoke all refresh tokens for a user (logout from all devices)
     pub async fn revoke_all_user_tokens(&self, user_id: Uuid) -> Result<(), JwtError> {
-        self.token_store.remove_all_user_tokens(user_id).await?;
+        self.token_repository
+            .remove_all_user_tokens(user_id)
+            .await?;
         Ok(())
     }
 }
@@ -210,21 +214,21 @@ impl JwtManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::token_store::MockTokenStore;
+    use crate::repositories::token::MockTokenRepository;
 
-    fn create_mock_token_store() -> Arc<MockTokenStore> {
-        let mut mock_store = MockTokenStore::new();
+    fn create_mock_token_repository() -> Arc<MockTokenRepository> {
+        let mut mock_repo = MockTokenRepository::new();
 
         // Setup default expectations for whitelist operations
-        mock_store
+        mock_repo
             .expect_whitelist_token()
             .returning(|_, _, _| Ok(()));
 
-        mock_store
+        mock_repo
             .expect_is_token_whitelisted()
             .returning(|_| Ok(true));
 
-        Arc::new(mock_store)
+        Arc::new(mock_repo)
     }
 
     #[test]
@@ -232,7 +236,7 @@ mod tests {
         let jwt_manager = JwtManager::builder()
             .access_secret("secret")
             .refresh_secret("secret")
-            .token_store(create_mock_token_store())
+            .token_repository(create_mock_token_repository())
             .build();
         let user_id = Uuid::now_v7();
         let org_id = Some(Uuid::now_v7());
@@ -261,7 +265,7 @@ mod tests {
         let jwt_manager = JwtManager::builder()
             .access_secret("secret")
             .refresh_secret("secret")
-            .token_store(create_mock_token_store())
+            .token_repository(create_mock_token_repository())
             .build();
         let user_id = Uuid::now_v7();
         let org_id = Some(Uuid::now_v7());
@@ -294,7 +298,7 @@ mod tests {
         let jwt_manager = JwtManager::builder()
             .access_secret("secret")
             .refresh_secret("secret")
-            .token_store(create_mock_token_store())
+            .token_repository(create_mock_token_repository())
             .build();
 
         let user_id = Uuid::now_v7();
@@ -315,21 +319,21 @@ mod tests {
 
     #[tokio::test]
     async fn test_token_not_whitelisted() {
-        let mut mock_store = MockTokenStore::new();
+        let mut mock_repo = MockTokenRepository::new();
 
-        mock_store
+        mock_repo
             .expect_whitelist_token()
             .returning(|_, _, _| Ok(()));
 
         // Token will not be found in whitelist
-        mock_store
+        mock_repo
             .expect_is_token_whitelisted()
             .returning(|_| Ok(false));
 
         let jwt_manager = JwtManager::builder()
             .access_secret("secret")
             .refresh_secret("secret")
-            .token_store(Arc::new(mock_store))
+            .token_repository(Arc::new(mock_repo))
             .build();
 
         let user_id = Uuid::now_v7();

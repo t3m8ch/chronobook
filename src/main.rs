@@ -16,12 +16,12 @@ use utoipa_scalar::{Scalar, Servable};
 use crate::api::v1::{admin, auth, bookings};
 use crate::config::Config;
 use crate::repositories::auth::PgAuthRepository;
+use crate::repositories::token::{RedisTokenRepository, TokenRepository};
 use crate::services::auth::AuthService;
 use crate::services::auth::AuthServiceImpl;
 use crate::services::jwt::JwtManager;
 use crate::services::providers::MockSmsProvider;
 use crate::services::providers::MockTelegramProvider;
-use crate::services::token_store::{RedisTokenStore, TokenStore};
 
 mod api;
 mod config;
@@ -115,8 +115,8 @@ async fn main() -> anyhow::Result<()> {
         telegram_provider
     });
 
-    let redis_token_store: Arc<dyn TokenStore> = Arc::new(
-        RedisTokenStore::new(&config.redis_url)
+    let redis_token_repository: Arc<dyn TokenRepository> = Arc::new(
+        RedisTokenRepository::new(&config.redis_url)
             .map_err(|e| anyhow::Error::msg(format!("Failed to connect to Redis: {}", e)))?,
     );
 
@@ -126,7 +126,7 @@ async fn main() -> anyhow::Result<()> {
             .refresh_secret(config.jwt_refresh_secret)
             .access_duration(config.jwt_access_duration)
             .refresh_duration(config.jwt_refresh_duration)
-            .token_store(redis_token_store)
+            .token_repository(redis_token_repository)
             .build(),
     );
 
