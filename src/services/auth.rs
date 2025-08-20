@@ -7,8 +7,10 @@ use std::sync::Arc;
 
 use crate::{
     models::auth::{
-        request::{PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest},
-        response::{PhoneLoginOk, TelegramVerifyHash},
+        request::{
+            PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest, UpdateProfileRequest,
+        },
+        response::{PhoneLoginOk, TelegramVerifyHash, UserProfileResponse},
     },
     repositories::auth::AuthRepository,
     services::jwt::JwtManager,
@@ -56,6 +58,17 @@ pub trait AuthService: Send + Sync {
     async fn logout(&self, refresh_token: &str) -> Result<(), AuthServiceError>;
 
     async fn logout_all(&self, refresh_token: &str) -> Result<(), AuthServiceError>;
+
+    async fn update_profile(
+        &self,
+        user_id: uuid::Uuid,
+        request: &UpdateProfileRequest,
+    ) -> Result<UserProfileResponse, AuthServiceError>;
+
+    async fn get_profile(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<Option<UserProfileResponse>, AuthServiceError>;
 }
 
 pub struct AuthServiceImpl {
@@ -354,6 +367,58 @@ impl AuthService for AuthServiceImpl {
             .revoke_all_user_tokens(token_data.claims.sub)
             .await
             .map_err(|_| AuthServiceError::InvalidRefreshToken)
+    }
+
+    async fn update_profile(
+        &self,
+        user_id: uuid::Uuid,
+        request: &UpdateProfileRequest,
+    ) -> Result<UserProfileResponse, AuthServiceError> {
+        // Check if profile exists
+        let profile = match self.auth_repo.find_user_profile(user_id).await? {
+            Some(_) => {
+                // Update existing profile
+                self.auth_repo
+                    .update_user_profile(
+                        user_id,
+                        &request.first_name,
+                        &request.last_name,
+                        request.patronymic.clone(),
+                    )
+                    .await?
+            }
+            None => {
+                // Create new profile
+                self.auth_repo
+                    .create_user_profile(
+                        user_id,
+                        &request.first_name,
+                        &request.last_name,
+                        request.patronymic.clone(),
+                    )
+                    .await?
+            }
+        };
+
+        Ok(UserProfileResponse {
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            patronymic: profile.patronymic,
+        })
+    }
+
+    async fn get_profile(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<Option<UserProfileResponse>, AuthServiceError> {
+        match self.auth_repo.find_user_profile(user_id).await? {
+            Some(profile) => Ok(Some(UserProfileResponse {
+                first_name: profile.first_name,
+                last_name: profile.last_name,
+                patronymic: profile.patronymic,
+            })),
+            None => Ok(None),
+        }
     }
 }
 

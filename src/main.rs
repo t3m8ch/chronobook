@@ -25,6 +25,7 @@ use crate::services::providers::MockTelegramProvider;
 
 mod api;
 mod config;
+mod extractors;
 mod models;
 mod repositories;
 mod services;
@@ -32,6 +33,7 @@ mod services;
 #[derive(Clone, FromRef)]
 pub struct AppState {
     pub auth_service: Arc<dyn AuthService>,
+    pub jwt_manager: Arc<JwtManager>,
     pub jwt_cookie_settings: JwtCookieSettings,
     pub without_validation_arguments: (),
 }
@@ -143,6 +145,7 @@ async fn main() -> anyhow::Result<()> {
             jwt_manager.clone(),
             config.telegram_hash_secret.clone(),
         )),
+        jwt_manager: jwt_manager.clone(),
         jwt_cookie_settings: if cfg!(debug_assertions) {
             JwtCookieSettings {
                 cookie_name: "refresh_token".to_string(),

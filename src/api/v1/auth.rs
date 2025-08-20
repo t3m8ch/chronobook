@@ -5,10 +5,13 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
     AppState, JwtCookieSettings,
+    extractors::AuthUser,
     models::{
         auth::{
-            request::{PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest},
-            response::{AccessToken, PhoneLoginOk, TelegramVerifyHash},
+            request::{
+                PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest, UpdateProfileRequest,
+            },
+            response::{AccessToken, PhoneLoginOk, TelegramVerifyHash, UserProfileResponse},
         },
         error::ApiError,
     },
@@ -23,6 +26,8 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(refresh))
         .routes(routes!(logout))
         .routes(routes!(logout_all))
+        .routes(routes!(update_profile))
+        .routes(routes!(get_profile))
 }
 
 #[utoipa::path(
@@ -223,4 +228,59 @@ fn chrono_duration_to_time(duration: chrono::Duration) -> time::Duration {
         duration.num_seconds() as i64,
         duration.num_nanoseconds().unwrap_or(0) as i32,
     )
+}
+
+#[utoipa::path(
+    put,
+    path = "/profile",
+    request_body = UpdateProfileRequest,
+    responses(
+        (status = 200, description = "Profile updated successfully", body = UserProfileResponse),
+        (status = 400, description = "Bad request", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearer" = [])
+    ),
+    tag = "auth"
+)]
+#[tracing::instrument(skip(state))]
+#[axum::debug_handler]
+pub async fn update_profile(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Garde(Json(request)): Garde<Json<UpdateProfileRequest>>,
+) -> Result<impl IntoResponse, ApiError> {
+    let result = state
+        .auth_service
+        .update_profile(auth_user.user_id, &request)
+        .await?;
+    Ok(Json(result))
+}
+
+#[utoipa::path(
+    get,
+    path = "/profile",
+    responses(
+        (status = 200, description = "Profile retrieved successfully", body = UserProfileResponse),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 404, description = "Profile not found", body = ApiError),
+        (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearer" = [])
+    ),
+    tag = "auth"
+)]
+#[tracing::instrument(skip(state))]
+#[axum::debug_handler]
+pub async fn get_profile(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+) -> Result<impl IntoResponse, ApiError> {
+    match state.auth_service.get_profile(auth_user.user_id).await? {
+        Some(profile) => Ok(Json(profile)),
+        None => Err(ApiError::not_found("Profile not found".to_string())),
+    }
 }
