@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;
@@ -40,7 +40,7 @@ pub struct DayRedefinitionOut {
 #[serde(rename_all = "camelCase")]
 pub struct WindowOut {
     pub id: Uuid,
-    pub slots: Vec<(DateTime<Utc>, DateTime<Utc>)>,
+    pub slots: Vec<(NaiveDateTime, NaiveDateTime)>,
     pub master: MasterOut,
     pub branch: BranchOut,
 }

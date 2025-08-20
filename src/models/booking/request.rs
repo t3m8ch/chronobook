@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -15,11 +15,11 @@ pub struct CreateBookingRequest {
     #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
     pub branch_id: Uuid,
 
-    #[schema(example = "2024-01-01T10:00:00Z")]
-    pub start: DateTime<Utc>,
+    #[schema(example = "2024-01-01T10:00:00")]
+    pub start: NaiveDateTime,
 
-    #[schema(example = "2024-01-01T11:00:00Z")]
-    pub end: DateTime<Utc>,
+    #[schema(example = "2024-01-01T11:00:00")]
+    pub end: NaiveDateTime,
 
     pub notify_methods: Vec<NotifyMethod>,
 }

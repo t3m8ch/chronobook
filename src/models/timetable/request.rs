@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -40,8 +40,8 @@ pub enum ScheduleDayIn {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Interval {
-    pub start: DateTime<Utc>,
-    pub end: DateTime<Utc>,
+    pub start: NaiveDateTime,
+    pub end: NaiveDateTime,
 }
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -50,6 +50,6 @@ pub struct GetWindowsQuery {
     pub organization_name: String,
     pub masters: Vec<Uuid>,
     pub branches: Vec<Uuid>,
-    pub min_datetime: DateTime<Utc>,
-    pub max_datetime: DateTime<Utc>,
+    pub min_datetime: NaiveDateTime,
+    pub max_datetime: NaiveDateTime,
 }
