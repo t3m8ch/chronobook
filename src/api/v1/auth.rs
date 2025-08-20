@@ -1,6 +1,6 @@
 use axum::{Json, extract::State, response::IntoResponse};
 use axum_extra::extract::cookie::{Cookie, CookieJar};
-use std::sync::Arc;
+use axum_valid::Garde;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::{
@@ -11,11 +11,10 @@ use crate::{
             response::{AccessToken, PhoneLoginOk, TelegramVerifyHash},
         },
         error::ApiError,
-        validation::ValidationExt,
     },
 };
 
-pub fn router() -> OpenApiRouter<Arc<AppState>> {
+pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(login_phone))
         .routes(routes!(verify_phone))
@@ -38,11 +37,11 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
     tag = "auth"
 )]
 #[tracing::instrument(skip(state))]
+#[axum::debug_handler]
 pub async fn login_phone(
-    State(state): State<Arc<AppState>>,
-    Json(request): Json<PhoneLoginRequest>,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<PhoneLoginRequest>>,
 ) -> Result<impl IntoResponse, ApiError> {
-    request.validate_ext()?;
     let result = state.auth_service.login_phone(&request).await?;
     Ok(Json(result))
 }
@@ -59,12 +58,12 @@ pub async fn login_phone(
     tag = "auth"
 )]
 #[tracing::instrument(skip(state, jar))]
+#[axum::debug_handler]
 pub async fn verify_phone(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
     jar: CookieJar,
-    Json(request): Json<PhoneVerifyRequest>,
+    Garde(Json(request)): Garde<Json<PhoneVerifyRequest>>,
 ) -> Result<impl IntoResponse, ApiError> {
-    request.validate_ext()?;
     let (access_token, refresh_token) = state.auth_service.verify_phone(&request).await?;
     let refresh_cookie = token_cookie(&state.jwt_cookie_settings, refresh_token);
     Ok((jar.add(refresh_cookie), Json(AccessToken { access_token })))
@@ -81,11 +80,9 @@ pub async fn verify_phone(
     tag = "auth"
 )]
 #[tracing::instrument(skip(state))]
-pub async fn login_telegram(
-    State(state): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, ApiError> {
+#[axum::debug_handler]
+pub async fn login_telegram(State(state): State<AppState>) -> Result<impl IntoResponse, ApiError> {
     let result = state.auth_service.login_telegram().await?;
-
     Ok(Json(result))
 }
 
@@ -101,10 +98,11 @@ pub async fn login_telegram(
     tag = "auth"
 )]
 #[tracing::instrument(skip(state, jar))]
+#[axum::debug_handler]
 pub async fn verify_telegram(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
     jar: CookieJar,
-    Json(request): Json<TelegramAuthRequest>,
+    Garde(Json(request)): Garde<Json<TelegramAuthRequest>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let (access_token, refresh_token) = state.auth_service.verify_telegram(&request).await?;
     let refresh_cookie = token_cookie(&state.jwt_cookie_settings, refresh_token);
@@ -122,8 +120,9 @@ pub async fn verify_telegram(
     tag = "auth"
 )]
 #[tracing::instrument(skip(state, jar))]
+#[axum::debug_handler]
 pub async fn refresh(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
     jar: CookieJar,
 ) -> Result<impl IntoResponse, ApiError> {
     // Get refresh token from cookie
@@ -137,16 +136,6 @@ pub async fn refresh(
     Ok((jar.add(refresh_cookie), Json(AccessToken { access_token })))
 }
 
-fn token_cookie<'a>(settings: &JwtCookieSettings, token: String) -> Cookie<'a> {
-    Cookie::build((settings.cookie_name.clone(), token))
-        .http_only(settings.http_only)
-        .secure(settings.secure)
-        .same_site(settings.same_site)
-        .path(settings.path.clone())
-        .max_age(chrono_duration_to_time(settings.max_age))
-        .build()
-}
-
 #[utoipa::path(
     post,
     path = "/logout",
@@ -158,8 +147,9 @@ fn token_cookie<'a>(settings: &JwtCookieSettings, token: String) -> Cookie<'a> {
     tag = "auth"
 )]
 #[tracing::instrument(skip(state, jar))]
+#[axum::debug_handler]
 pub async fn logout(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
     jar: CookieJar,
 ) -> Result<impl IntoResponse, ApiError> {
     if let Some(refresh_token) = jar.get("refresh_token") {
@@ -193,8 +183,9 @@ pub async fn logout(
     tag = "auth"
 )]
 #[tracing::instrument(skip(state, jar))]
+#[axum::debug_handler]
 pub async fn logout_all(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState>,
     jar: CookieJar,
 ) -> Result<impl IntoResponse, ApiError> {
     if let Some(refresh_token) = jar.get("refresh_token") {
@@ -215,6 +206,16 @@ pub async fn logout_all(
         jar.add(expired_cookie),
         Json(serde_json::json!({"message": "Logged out from all devices successfully"})),
     ))
+}
+
+fn token_cookie<'a>(settings: &JwtCookieSettings, token: String) -> Cookie<'a> {
+    Cookie::build((settings.cookie_name.clone(), token))
+        .http_only(settings.http_only)
+        .secure(settings.secure)
+        .same_site(settings.same_site)
+        .path(settings.path.clone())
+        .max_age(chrono_duration_to_time(settings.max_age))
+        .build()
 }
 
 fn chrono_duration_to_time(duration: chrono::Duration) -> time::Duration {

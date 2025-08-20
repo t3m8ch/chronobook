@@ -1,10 +1,10 @@
 use axum::Router;
+use axum::extract::FromRef;
 use axum::http::Method;
 use axum::http::header;
 use axum_extra::extract::cookie::SameSite;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
-use tower_http::cors::Any;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -29,10 +29,11 @@ mod models;
 mod repositories;
 mod services;
 
-#[derive(Clone)]
+#[derive(Clone, FromRef)]
 pub struct AppState {
     pub auth_service: Arc<dyn AuthService>,
     pub jwt_cookie_settings: JwtCookieSettings,
+    pub without_validation_arguments: (),
 }
 
 #[derive(Clone, Debug)]
@@ -134,7 +135,7 @@ async fn main() -> anyhow::Result<()> {
         .connect(&config.database_url)
         .await?;
 
-    let state = Arc::new(AppState {
+    let state = AppState {
         auth_service: Arc::new(AuthServiceImpl::new(
             Arc::new(PgAuthRepository::new(pg_pool)),
             sms_provider.clone(),
@@ -161,7 +162,8 @@ async fn main() -> anyhow::Result<()> {
                 path: "/".to_string(),
             }
         },
-    });
+        without_validation_arguments: (),
+    };
 
     // Build the routers with OpenApiRouter
     let (auth_router, auth_api) = auth::router().split_for_parts();

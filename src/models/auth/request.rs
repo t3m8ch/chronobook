@@ -49,21 +49,27 @@ pub struct RefreshTokenRequest {
     pub refresh_token: String,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
+#[garde(context(()))]
 pub struct TelegramAuthRequest {
+    #[garde(skip)]
     #[schema(example = 123456789)]
     pub telegram_id: i64,
 
+    #[garde(skip)]
     #[schema(example = "john_doe")]
     pub username: Option<String>,
 
+    #[garde(length(min = 1, max = 100))]
     #[schema(example = "John")]
     pub first_name: String,
 
+    #[garde(skip)]
     #[schema(example = "Doe")]
     pub last_name: Option<String>,
 
+    #[garde(length(min = 1))]
     #[schema(example = "hash_value")]
     pub hash: String,
 }

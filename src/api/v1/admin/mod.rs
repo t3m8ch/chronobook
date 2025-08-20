@@ -3,7 +3,6 @@ use axum::{
     extract::{Path, State},
 };
 use serde::Deserialize;
-use std::sync::Arc;
 use utoipa::IntoParams;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
@@ -19,7 +18,7 @@ use crate::{
     models::{dashboard::response::OrganizationDashboardOut, error::ApiError},
 };
 
-pub fn router() -> OpenApiRouter<Arc<AppState>> {
+pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(get_organization_dashboard))
         .merge(branch::router())
@@ -57,7 +56,7 @@ pub struct ListQuery {
 #[tracing::instrument(skip(_state))]
 pub async fn get_organization_dashboard(
     Path(organization_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<Json<OrganizationDashboardOut>, ApiError> {
     // TODO: Implement get organization dashboard logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))

@@ -3,7 +3,6 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
 };
-use std::sync::Arc;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
@@ -20,7 +19,7 @@ use crate::{
 
 use super::ListQuery;
 
-pub fn router() -> OpenApiRouter<Arc<AppState>> {
+pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(create_branch))
         .routes(routes!(list_branches))
@@ -48,7 +47,7 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
 )]
 #[tracing::instrument(skip(_state))]
 pub async fn create_branch(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<CreateBranchRequest>,
 ) -> Result<Json<CreateBranchOut>, ApiError> {
     // TODO: Implement create branch logic
@@ -76,7 +75,7 @@ pub async fn create_branch(
 #[tracing::instrument(skip(_state))]
 pub async fn list_branches(
     Query(query): Query<ListQuery>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<Json<Vec<BranchOut>>, ApiError> {
     // TODO: Implement list branches logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
@@ -104,7 +103,7 @@ pub async fn list_branches(
 #[tracing::instrument(skip(_state))]
 pub async fn get_branch(
     Path(branch_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<Json<BranchOut>, ApiError> {
     // TODO: Implement get branch logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
@@ -133,7 +132,7 @@ pub async fn get_branch(
 #[tracing::instrument(skip(_state))]
 pub async fn update_branch(
     Path(branch_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<UpdateBranchRequest>,
 ) -> Result<Json<BranchOut>, ApiError> {
     // TODO: Implement update branch logic
@@ -162,7 +161,7 @@ pub async fn update_branch(
 #[tracing::instrument(skip(_state))]
 pub async fn delete_branch(
     Path(branch_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
     // TODO: Implement delete branch logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))

@@ -21,7 +21,7 @@ impl Config {
         let mut errors: Vec<String> = Vec::new();
 
         let server_addr = std::env::var("SERVER_ADDR").unwrap_or("0.0.0.0:3222".to_string());
-        let allow_origin =
+        let _allow_origin =
             std::env::var("ALLOW_ORIGIN").unwrap_or("http://localhost:3222".to_string());
         let access_secret = std::env::var("JWT_ACCESS_SECRET");
         let refresh_secret = std::env::var("JWT_REFRESH_SECRET");

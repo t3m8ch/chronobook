@@ -3,7 +3,6 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
-use std::sync::Arc;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
@@ -22,7 +21,7 @@ use crate::{
     },
 };
 
-pub fn router() -> OpenApiRouter<Arc<AppState>> {
+pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(get_notification_settings))
         .routes(routes!(update_notification_settings))
@@ -53,7 +52,7 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
     tag = "admin"
 )]
 pub async fn get_notification_settings(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Path(_branch_id): Path<Uuid>,
 ) -> Result<Json<NotificationSettingsResponse>, ApiError> {
     // TODO: Implement notification settings retrieval
@@ -76,7 +75,7 @@ pub async fn get_notification_settings(
     tag = "admin"
 )]
 pub async fn update_notification_settings(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<UpdateNotificationSettingsRequest>,
 ) -> Result<Json<NotificationSettingsResponse>, ApiError> {
     request.validate_ext()?;
@@ -101,7 +100,7 @@ pub async fn update_notification_settings(
     tag = "admin"
 )]
 pub async fn get_notification_templates(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Path(_branch_id): Path<Uuid>,
 ) -> Result<Json<Vec<NotificationTemplateResponse>>, ApiError> {
     // TODO: Implement notification templates retrieval
@@ -125,7 +124,7 @@ pub async fn get_notification_templates(
     tag = "admin"
 )]
 pub async fn create_notification_template(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<CreateNotificationTemplateRequest>,
 ) -> Result<(StatusCode, Json<NotificationTemplateResponse>), ApiError> {
     request.validate_ext()?;
@@ -151,7 +150,7 @@ pub async fn create_notification_template(
     tag = "admin"
 )]
 pub async fn get_notification_template(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Path((_branch_id, _template_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<NotificationTemplateResponse>, ApiError> {
     // TODO: Implement notification template retrieval
@@ -174,7 +173,7 @@ pub async fn get_notification_template(
     tag = "admin"
 )]
 pub async fn update_notification_template(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<UpdateNotificationTemplateRequest>,
 ) -> Result<Json<NotificationTemplateResponse>, ApiError> {
     request.validate_ext()?;
@@ -197,7 +196,7 @@ pub async fn update_notification_template(
     tag = "admin"
 )]
 pub async fn delete_notification_template(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<DeleteNotificationTemplateRequest>,
 ) -> Result<StatusCode, ApiError> {
     request.validate_ext()?;
@@ -221,7 +220,7 @@ pub async fn delete_notification_template(
     tag = "admin"
 )]
 pub async fn send_bulk_notification(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<SendBulkNotificationRequest>,
 ) -> Result<Json<BulkNotificationResponse>, ApiError> {
     request.validate_ext()?;
@@ -246,7 +245,7 @@ pub async fn send_bulk_notification(
     tag = "admin"
 )]
 pub async fn get_scheduled_notifications(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Path(_branch_id): Path<Uuid>,
 ) -> Result<Json<Vec<ScheduledNotificationResponse>>, ApiError> {
     // TODO: Implement scheduled notifications retrieval
@@ -270,7 +269,7 @@ pub async fn get_scheduled_notifications(
     tag = "admin"
 )]
 pub async fn get_booking_notifications(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Path(_booking_id): Path<Uuid>,
 ) -> Result<Json<Vec<ScheduledNotificationResponse>>, ApiError> {
     // TODO: Implement booking notifications retrieval

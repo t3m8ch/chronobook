@@ -3,7 +3,6 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
 };
-use std::sync::Arc;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
@@ -20,7 +19,7 @@ use crate::{
 
 use super::ListQuery;
 
-pub fn router() -> OpenApiRouter<Arc<AppState>> {
+pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(create_employee))
         .routes(routes!(list_employees))
@@ -48,7 +47,7 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
 )]
 #[tracing::instrument(skip(_state))]
 pub async fn create_employee(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<CreateEmployeeRequest>,
 ) -> Result<Json<CreateEmployeeOut>, ApiError> {
     // TODO: Implement create employee logic
@@ -76,7 +75,7 @@ pub async fn create_employee(
 #[tracing::instrument(skip(_state))]
 pub async fn list_employees(
     Query(query): Query<ListQuery>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<Json<Vec<EmployeeOut>>, ApiError> {
     // TODO: Implement list employees logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
@@ -104,7 +103,7 @@ pub async fn list_employees(
 #[tracing::instrument(skip(_state))]
 pub async fn get_employee(
     Path(employee_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<Json<EmployeeOut>, ApiError> {
     // TODO: Implement get employee logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
@@ -133,7 +132,7 @@ pub async fn get_employee(
 #[tracing::instrument(skip(_state))]
 pub async fn update_employee(
     Path(employee_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<UpdateEmployeeRequest>,
 ) -> Result<Json<EmployeeOut>, ApiError> {
     // TODO: Implement update employee logic
@@ -162,7 +161,7 @@ pub async fn update_employee(
 #[tracing::instrument(skip(_state))]
 pub async fn delete_employee(
     Path(employee_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
     // TODO: Implement delete employee logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))

@@ -3,7 +3,6 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
 };
-use std::sync::Arc;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
@@ -20,7 +19,7 @@ use crate::{
 
 use super::ListQuery;
 
-pub fn router() -> OpenApiRouter<Arc<AppState>> {
+pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(create_service))
         .routes(routes!(list_services))
@@ -46,7 +45,7 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
 )]
 #[tracing::instrument(skip(_state))]
 pub async fn create_service(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<CreateServiceRequest>,
 ) -> Result<Json<CreateServiceOut>, ApiError> {
     // TODO: Implement create service logic
@@ -72,7 +71,7 @@ pub async fn create_service(
 #[tracing::instrument(skip(_state))]
 pub async fn list_services(
     Query(query): Query<ListQuery>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<Json<Vec<ServiceOut>>, ApiError> {
     // TODO: Implement list services logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
@@ -98,7 +97,7 @@ pub async fn list_services(
 #[tracing::instrument(skip(_state))]
 pub async fn get_service(
     Path(service_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<Json<ServiceOut>, ApiError> {
     // TODO: Implement get service logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
@@ -125,7 +124,7 @@ pub async fn get_service(
 #[tracing::instrument(skip(_state))]
 pub async fn update_service(
     Path(service_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<UpdateServiceRequest>,
 ) -> Result<Json<ServiceOut>, ApiError> {
     // TODO: Implement update service logic
@@ -152,7 +151,7 @@ pub async fn update_service(
 #[tracing::instrument(skip(_state))]
 pub async fn delete_service(
     Path(service_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
     // TODO: Implement delete service logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))

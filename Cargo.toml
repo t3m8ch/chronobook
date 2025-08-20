@@ -41,3 +41,4 @@ redis = { version = "0.26", features = ["tokio-comp"] }
 hmac = "0.12"
 base64 = "0.22"
 subtle = "2.6"
+axum-valid = { version = "0.24.0", features = ["full_garde"] }

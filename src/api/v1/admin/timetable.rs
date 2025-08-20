@@ -5,7 +5,6 @@ use axum::{
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use utoipa::ToSchema;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
@@ -25,7 +24,7 @@ use crate::{
 
 use super::ListQuery;
 
-pub fn router() -> OpenApiRouter<Arc<AppState>> {
+pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(create_timetable))
         .routes(routes!(list_timetables))
@@ -62,7 +61,7 @@ pub struct TimetableWithRedefinitionsOut {
 )]
 #[tracing::instrument(skip(_state))]
 pub async fn create_timetable(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<CreateTimetableRequest>,
 ) -> Result<StatusCode, ApiError> {
     // TODO: Implement create timetable logic
@@ -90,7 +89,7 @@ pub async fn create_timetable(
 #[tracing::instrument(skip(_state))]
 pub async fn list_timetables(
     Query(query): Query<ListQuery>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<Json<Vec<TimetableOut>>, ApiError> {
     // TODO: Implement list timetables logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
@@ -118,7 +117,7 @@ pub async fn list_timetables(
 #[tracing::instrument(skip(_state))]
 pub async fn get_timetable_with_redefinitions(
     Path(master_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<Json<TimetableWithRedefinitionsOut>, ApiError> {
     // TODO: Implement get timetable with redefinitions logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
@@ -147,7 +146,7 @@ pub async fn get_timetable_with_redefinitions(
 #[tracing::instrument(skip(_state))]
 pub async fn update_timetable(
     Path(master_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<UpdateTimetableRequest>,
 ) -> Result<Json<TimetableOut>, ApiError> {
     // TODO: Implement update timetable logic
@@ -176,7 +175,7 @@ pub async fn update_timetable(
 #[tracing::instrument(skip(_state))]
 pub async fn delete_timetable(
     Path(master_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
     // TODO: Implement delete timetable logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
@@ -201,7 +200,7 @@ pub async fn delete_timetable(
 )]
 #[tracing::instrument(skip(_state))]
 pub async fn create_day_redefinition(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(request): Json<CreateDayRedefinitionRequest>,
 ) -> Result<StatusCode, ApiError> {
     // TODO: Implement create day redefinition logic
@@ -231,7 +230,7 @@ pub async fn create_day_redefinition(
 #[tracing::instrument(skip(_state))]
 pub async fn delete_day_redefinition(
     Path((master_id, date)): Path<(Uuid, NaiveDate)>,
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
     // TODO: Implement delete day redefinition logic
     Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))

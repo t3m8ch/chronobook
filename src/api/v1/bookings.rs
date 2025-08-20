@@ -3,7 +3,6 @@ use axum::{
     extract::{Path, Query, State},
     response::IntoResponse,
 };
-use std::sync::Arc;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
@@ -20,7 +19,7 @@ use crate::{
     },
 };
 
-pub fn router() -> OpenApiRouter<Arc<AppState>> {
+pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(get_organization_by_name))
         .routes(routes!(get_services))
@@ -46,7 +45,7 @@ pub fn router() -> OpenApiRouter<Arc<AppState>> {
 )]
 #[tracing::instrument(skip(_state))]
 pub async fn get_organization_by_name(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Path(organization_name): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
     // TODO: Implement
@@ -67,7 +66,7 @@ pub async fn get_organization_by_name(
 )]
 #[tracing::instrument(skip(_state))]
 pub async fn get_services(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Query(query): Query<GetServicesQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
     // TODO: Implement get services logic
@@ -89,7 +88,7 @@ pub async fn get_services(
 )]
 #[tracing::instrument(skip(_state))]
 pub async fn get_masters(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Query(query): Query<GetMastersQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
     // TODO: Implement get masters logic
@@ -111,7 +110,7 @@ pub async fn get_masters(
 )]
 #[tracing::instrument(skip(_state))]
 pub async fn get_master_by_id(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Path(master_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ApiError> {
     // TODO: Implement
@@ -133,7 +132,7 @@ pub async fn get_master_by_id(
 )]
 #[tracing::instrument(skip(_state))]
 pub async fn get_branches(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Query(query): Query<GetBranchesQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
     // TODO: Implement get branches logic
@@ -157,7 +156,7 @@ pub async fn get_branches(
     tag = "bookings"
 )]
 async fn get_windows(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Query(_query): Query<GetWindowsQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
     Ok(Json(Vec::<WindowOut>::new()))
@@ -181,7 +180,7 @@ async fn get_windows(
     tag = "bookings"
 )]
 async fn create_booking(
-    State(_state): State<Arc<AppState>>,
+    State(_state): State<AppState>,
     Json(_request): Json<CreateBookingRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     Ok(Json(BookingOut::default()))
