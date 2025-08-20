@@ -374,13 +374,13 @@ mod tests {
         mock_sms: MockSmsProvider,
         mock_telegram: MockTelegramProvider,
     ) -> AuthServiceImpl {
-        use crate::services::token_store::MockTokenStore;
+        use crate::repositories::token::MockTokenRepository;
 
-        let mut mock_token_store = MockTokenStore::new();
-        mock_token_store
+        let mut mock_token_repository = MockTokenRepository::new();
+        mock_token_repository
             .expect_whitelist_token()
             .returning(|_, _, _| Ok(()));
-        mock_token_store
+        mock_token_repository
             .expect_is_token_whitelisted()
             .returning(|_| Ok(true));
 
@@ -392,7 +392,7 @@ mod tests {
                 JwtManager::builder()
                     .access_secret("secret")
                     .refresh_secret("secret")
-                    .token_store(Arc::new(mock_token_store))
+                    .token_repository(Arc::new(mock_token_repository))
                     .build(),
             ),
             "test_telegram_secret".to_string(),
@@ -458,16 +458,16 @@ mod tests {
                 JwtManager::builder()
                     .access_secret("secret")
                     .refresh_secret("secret")
-                    .token_store({
-                        use crate::services::token_store::MockTokenStore;
-                        let mut mock_token_store = MockTokenStore::new();
-                        mock_token_store
+                    .token_repository({
+                        use crate::repositories::token::MockTokenRepository;
+                        let mut mock_token_repository = MockTokenRepository::new();
+                        mock_token_repository
                             .expect_whitelist_token()
                             .returning(|_, _, _| Ok(()));
-                        mock_token_store
+                        mock_token_repository
                             .expect_is_token_whitelisted()
                             .returning(|_| Ok(true));
-                        Arc::new(mock_token_store)
+                        Arc::new(mock_token_repository)
                     })
                     .build(),
             ),
@@ -643,16 +643,16 @@ mod tests {
         let jwt_manager = JwtManager::builder()
             .access_secret("secret")
             .refresh_secret("secret")
-            .token_store({
-                use crate::services::token_store::MockTokenStore;
-                let mut mock_token_store = MockTokenStore::new();
-                mock_token_store
+            .token_repository({
+                use crate::repositories::token::MockTokenRepository;
+                let mut mock_token_repository = MockTokenRepository::new();
+                mock_token_repository
                     .expect_whitelist_token()
                     .returning(|_, _, _| Ok(()));
-                mock_token_store
+                mock_token_repository
                     .expect_is_token_whitelisted()
                     .returning(|_| Ok(true));
-                Arc::new(mock_token_store)
+                Arc::new(mock_token_repository)
             })
             .build();
 
