@@ -69,7 +69,8 @@ cargo test -- --nocapture  # Show println! output during tests
 │   └── timetable/      # Timetable request/response models
 ├── repositories/       # Data access layer with traits
 │   ├── mod.rs          # Repository module definitions
-│   └── auth.rs         # Auth repository implementation
+│   ├── auth.rs         # Auth repository implementation
+│   └── token.rs        # Token whitelist repository for refresh tokens
 ├── services/           # Business logic layer
 │   ├── mod.rs          # Service module definitions
 │   ├── auth.rs         # Auth service implementation
@@ -130,7 +131,7 @@ The codebase uses `yare` for parameterized testing. Key practices:
 - **OpenAPI Router**: utoipa-axum 0.2 (OpenAPI-aware routing)
 - **Database**: sqlx 0.8 with PostgreSQL (compile-time checked queries)
 - **Time**: chrono 0.4 for date/time handling, time 0.3 for cookie timestamps
-- **Validation**: garde 0.22 for input validation
+- **Validation**: garde 0.22 for input validation + axum-valid 0.24 for request validation
 - **Error Handling**: anyhow 1.0 for error management, thiserror 2.0 for service errors
 - **IDs**: uuid 1.18 for unique identifiers
 - **Phone Validation**: phonenumber 0.3 for international phone number validation
@@ -140,16 +141,16 @@ The codebase uses `yare` for parameterized testing. Key practices:
 - **Tracing**: tracing 0.1 + tracing-subscriber 0.3 for logging
 - **Environment**: dotenv 0.15 for environment variables
 - **Authentication**: jsonwebtoken 9.3 for JWT tokens
-- **Cryptography**: sha2 0.10 for hashing, hex 0.4 for encoding
+- **Cryptography**: sha2 0.10 for hashing, hex 0.4 for encoding, hmac 0.12 for HMAC, base64 0.22 for encoding, subtle 2.6 for constant-time comparison
 - **Random**: rand 0.8 for generating secure tokens
 - **Testing**: mockall 0.13 for mocking in tests
-- **Utilities**: derive_more 2.0 for custom derives, async-trait 0.1 for async traits
+- **Utilities**: derive_more 2.0 for custom derives, async-trait 0.1 for async traits, bon 3.7 for builder pattern
+- **Caching**: redis 0.26 for token whitelist storage
 
 ### Missing Test Dependencies (to be added)
 ```toml
 [dev-dependencies]
 yare = "3.0"      # For parameterized testing
-bon = "4.0"       # For test data builders
 ```
 
 ## Business Logic Notes
@@ -190,6 +191,7 @@ The application uses a centralized `Config` struct in `src/config.rs` to manage 
 - `JWT_ACCESS_EXPIRATION_MINUTES` - Access token lifetime in minutes (default: 15)
 - `JWT_REFRESH_EXPIRATION_DAYS` - Refresh token lifetime in days (default: 7)
 - `DATABASE_URL` - PostgreSQL connection string (required)
+- `REDIS_URL` - Redis connection string for token whitelist (required)
 
 ### Server Setup
 - **Host**: Binds to `0.0.0.0:3222` (configurable via SERVER_ADDR env var)
@@ -209,16 +211,18 @@ curl http://localhost:3222/api/v1/openapi.json  # Get OpenAPI spec
 
 ### Authentication Architecture
 - **Dual User Types**: Separate flows for customers vs employees
-- **Multi-Method Auth**: SMS and Telegram authentication support
+- **Multi-Method Auth**: SMS and Telegram authentication support with HMAC SHA-256 verification
 - **Organization Scoping**: Customer auth scoped to specific organizations
-- **Token Management**: Access/refresh token mechanism for both user types
+- **Token Management**: Access/refresh token mechanism with JWT IDs (jti) for tracking
 - **Secure Cookies**: Refresh tokens stored in HTTP-only cookies for security
+- **Token Whitelist**: Redis-based whitelist for refresh tokens to enable secure revocation
+- **Telegram Security**: HMAC-SHA256 verification of Telegram Web App authentication data
 
 ### API Design Patterns
 - **Strong Typing**: Separate request/response models for each endpoint
 - **Error Consistency**: Unified `ApiError` structure across all endpoints
 - **OpenAPI First**: Full specification with automatic documentation via utoipa
-- **Validation Layer**: garde validators with custom ValidationExt trait
+- **Validation Layer**: axum-valid with Garde extractors for automatic request validation
 - **Router Architecture**: utoipa-axum OpenApiRouter for automatic OpenAPI generation
 - **State Management**: Arc<AppState> for shared application state
 - **Partial Updates**: Update endpoints use `Option<Option<T>>` pattern for nullable fields:
@@ -258,12 +262,15 @@ The project is actively being developed with the following layers implemented:
 
 **✅ Completed:**
 - Basic project structure with layered architecture
-- Authentication service and repository layers
-- JWT token utilities
+- Authentication service and repository layers with phone/Telegram auth
+- JWT token utilities with access/refresh token management
+- Token whitelist repository using Redis for secure token revocation
 - Service error handling with thiserror
 - Database models in separate `db.rs` modules
 - HTTP-only cookie support for refresh tokens
 - Centralized configuration management with Config struct
+- Telegram Web App authentication with HMAC-SHA256 verification
+- Request validation using axum-valid with Garde
 
 **🔄 In Progress:**
 - Full CRUD operations for all entities
@@ -272,9 +279,11 @@ The project is actively being developed with the following layers implemented:
 - External service providers (SMS, Telegram)
 
 **📋 TODO:**
-- Add missing test dependencies (yare, bon)
-- Complete repository implementations
+- Add missing test dependencies (yare for parameterized testing)
+- Complete repository implementations for all entities
 - Add comprehensive integration tests
+- Implement branch, employee, service, and booking repositories
+- Add role-based access control middleware
 
 ### Backend Implementation Guidelines
 
