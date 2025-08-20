@@ -211,7 +211,6 @@ impl JwtManager {
 mod tests {
     use super::*;
     use crate::services::token_store::MockTokenStore;
-    use std::time::Duration as StdDuration;
 
     fn create_mock_token_store() -> Arc<MockTokenStore> {
         let mut mock_store = MockTokenStore::new();
