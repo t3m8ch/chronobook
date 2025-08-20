@@ -218,6 +218,17 @@ curl http://localhost:3222/api/v1/openapi.json  # Get OpenAPI spec
 - **Token Whitelist**: Redis-based whitelist for refresh tokens to enable secure revocation
 - **Telegram Security**: HMAC-SHA256 verification of Telegram Web App authentication data
 
+#### Implemented Auth Endpoints
+- `POST /api/v1/auth/login/phone` - Request SMS verification code
+- `POST /api/v1/auth/verify/phone` - Verify SMS code and get tokens
+- `POST /api/v1/auth/login/telegram` - Get Telegram auth hash
+- `POST /api/v1/auth/verify/telegram` - Verify Telegram auth and get tokens
+- `POST /api/v1/auth/refresh` - Refresh access token using HTTP-only cookies
+- `POST /api/v1/auth/logout` - Logout from current device
+- `POST /api/v1/auth/logout/all` - Logout from all devices
+- `PUT /api/v1/auth/profile` - Create or update user profile
+- `GET /api/v1/auth/profile` - Get user profile
+
 ### API Design Patterns
 - **Strong Typing**: Separate request/response models for each endpoint
 - **Error Consistency**: Unified `ApiError` structure across all endpoints
@@ -271,6 +282,9 @@ The project is actively being developed with the following layers implemented:
 - Centralized configuration management with Config struct
 - Telegram Web App authentication with HMAC-SHA256 verification
 - Request validation using axum-valid with Garde
+- User profile management (create/update/get profiles)
+- AuthUser extractor for JWT-based authentication
+- Complete auth API endpoints with OpenAPI documentation
 
 **🔄 In Progress:**
 - Full CRUD operations for all entities
@@ -330,4 +344,162 @@ The project is actively being developed with the following layers implemented:
    - Pass configuration values to components, never read environment variables directly in services/repositories
    - Components should receive configuration through constructors, not environment access
 
-- use pgcli for db testing and curl for api testing
+## API Testing & Database Commands
+
+### API Testing with curl
+Use these commands to test the authentication and profile endpoints:
+
+#### Authentication Flow
+```bash
+# 1. Phone login (request verification code)
+curl -X POST http://localhost:3222/api/v1/auth/login/phone \
+  -H "Content-Type: application/json" \
+  -d '{"phone": "+79991234567"}'
+
+# 2. Get verification code from database
+echo "SELECT code FROM phone_verify_codes WHERE user_id IN (SELECT id FROM users WHERE phone = '+79991234567') ORDER BY created_at DESC LIMIT 1;" | pgcli $DATABASE_URL
+
+# 3. Verify phone and get access token
+curl -X POST http://localhost:3222/api/v1/auth/verify/phone \
+  -H "Content-Type: application/json" \
+  -d '{"phone": "+79991234567", "code": 123456}' \
+  -c cookies.txt
+
+# 4. Extract access token (using jq)
+ACCESS_TOKEN=$(curl -X POST http://localhost:3222/api/v1/auth/verify/phone \
+  -H "Content-Type: application/json" \
+  -d '{"phone": "+79991234567", "code": 123456}' \
+  -s | jq -r '.accessToken')
+```
+
+#### Profile Management
+```bash
+# Create/update user profile
+curl -X PUT http://localhost:3222/api/v1/auth/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -d '{"firstName": "Иван", "lastName": "Иванов", "patronymic": "Иванович"}'
+
+# Get user profile
+curl -X GET http://localhost:3222/api/v1/auth/profile \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+
+# Update profile without patronymic
+curl -X PUT http://localhost:3222/api/v1/auth/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -d '{"firstName": "Петр", "lastName": "Петров"}'
+```
+
+#### Token Management
+```bash
+# Refresh access token (uses cookies)
+curl -X POST http://localhost:3222/api/v1/auth/refresh \
+  -b cookies.txt \
+  -c cookies.txt
+
+# Logout from current device
+curl -X POST http://localhost:3222/api/v1/auth/logout \
+  -b cookies.txt
+
+# Logout from all devices
+curl -X POST http://localhost:3222/api/v1/auth/logout/all \
+  -b cookies.txt
+```
+
+#### Testing Error Cases
+```bash
+# Unauthorized access
+curl -X GET http://localhost:3222/api/v1/auth/profile
+
+# Invalid token
+curl -X GET http://localhost:3222/api/v1/auth/profile \
+  -H "Authorization: Bearer invalid_token"
+
+# Validation errors
+curl -X PUT http://localhost:3222/api/v1/auth/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -d '{"firstName": "", "lastName": "User"}'
+```
+
+### Database Testing with pgcli
+Connect to PostgreSQL and run queries:
+
+#### Basic Connection
+```bash
+# Connect to database
+pgcli $DATABASE_URL
+
+# Alternative with echo for single queries
+echo "SELECT * FROM users;" | pgcli $DATABASE_URL
+```
+
+#### User and Profile Queries
+```bash
+# View all users
+echo "SELECT id, phone, telegram_id, phone_verified_at, telegram_verified_at FROM users;" | pgcli $DATABASE_URL
+
+# View user profiles
+echo "SELECT up.first_name, up.last_name, up.patronymic, u.phone FROM user_profiles up JOIN users u ON up.user_id = u.id;" | pgcli $DATABASE_URL
+
+# Find user by phone
+echo "SELECT * FROM users WHERE phone = '+79991234567';" | pgcli $DATABASE_URL
+
+# View verification codes
+echo "SELECT u.phone, pvc.code, pvc.created_at, pvc.expire_at, pvc.used FROM phone_verify_codes pvc JOIN users u ON pvc.user_id = u.id ORDER BY pvc.created_at DESC;" | pgcli $DATABASE_URL
+```
+
+#### Database Schema Exploration
+```bash
+# List all tables
+echo "\dt" | pgcli $DATABASE_URL
+
+# Describe table structure
+echo "\d users" | pgcli $DATABASE_URL
+echo "\d user_profiles" | pgcli $DATABASE_URL
+
+# View table relationships
+echo "SELECT tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY';" | pgcli $DATABASE_URL
+```
+
+#### Data Cleanup for Testing
+```bash
+# Clear verification codes
+echo "DELETE FROM phone_verify_codes WHERE used = true OR expire_at < NOW();" | pgcli $DATABASE_URL
+
+# Clear test users (be careful!)
+echo "DELETE FROM user_profiles WHERE user_id IN (SELECT id FROM users WHERE phone LIKE '+7999%');" | pgcli $DATABASE_URL
+echo "DELETE FROM users WHERE phone LIKE '+7999%';" | pgcli $DATABASE_URL
+```
+
+### Development Workflow
+```bash
+# Start development server with auto-reload
+cargo watch -x run
+
+# Run tests
+cargo test
+
+# Check API documentation
+open http://localhost:3222/docs/scalar
+
+# View OpenAPI specification
+curl http://localhost:3222/api/v1/openapi.json | jq
+```
+
+### Useful Aliases for Testing
+Add these to your shell profile (.bashrc, .zshrc):
+
+```bash
+# API testing aliases
+alias api-login='curl -X POST http://localhost:3222/api/v1/auth/login/phone -H "Content-Type: application/json"'
+alias api-verify='curl -X POST http://localhost:3222/api/v1/auth/verify/phone -H "Content-Type: application/json"'
+alias api-profile-get='curl -X GET http://localhost:3222/api/v1/auth/profile'
+alias api-profile-update='curl -X PUT http://localhost:3222/api/v1/auth/profile -H "Content-Type: application/json"'
+
+# Database aliases
+alias db-users='echo "SELECT id, phone, phone_verified_at FROM users ORDER BY created_at DESC;" | pgcli $DATABASE_URL'
+alias db-profiles='echo "SELECT up.first_name, up.last_name, up.patronymic, u.phone FROM user_profiles up JOIN users u ON up.user_id = u.id;" | pgcli $DATABASE_URL'
+alias db-codes='echo "SELECT u.phone, pvc.code, pvc.expire_at FROM phone_verify_codes pvc JOIN users u ON pvc.user_id = u.id WHERE pvc.used = false ORDER BY pvc.created_at DESC;" | pgcli $DATABASE_URL'
+```
