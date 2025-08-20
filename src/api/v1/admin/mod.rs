@@ -30,8 +30,12 @@ pub fn router() -> OpenApiRouter<AppState> {
 
 #[derive(Debug, Clone, Deserialize, IntoParams)]
 pub struct ListQuery {
-    /// Organization ID
-    pub organization_id: Uuid,
+    /// Organization ID (optional for filtering)
+    pub organization_id: Option<Uuid>,
+    /// Limit number of results (default: 20, max: 100)
+    pub limit: Option<usize>,
+    /// Offset for pagination
+    pub offset: Option<usize>,
 }
 
 #[utoipa::path(

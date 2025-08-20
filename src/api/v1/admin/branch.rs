@@ -8,6 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
+    extractors::auth::AuthUser,
     models::{
         branch::{
             request::{CreateBranchRequest, UpdateBranchRequest},
@@ -45,13 +46,18 @@ pub fn router() -> OpenApiRouter<AppState> {
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn create_branch(
-    State(_state): State<AppState>,
+    auth_user: AuthUser,
+    State(state): State<AppState>,
     Json(request): Json<CreateBranchRequest>,
 ) -> Result<Json<CreateBranchOut>, ApiError> {
-    // TODO: Implement create branch logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let result = state
+        .branch_service
+        .create_branch(auth_user.user_id, request)
+        .await?;
+
+    Ok(Json(result))
 }
 
 #[utoipa::path(
@@ -72,13 +78,21 @@ pub async fn create_branch(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn list_branches(
+    auth_user: AuthUser,
     Query(query): Query<ListQuery>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<Vec<BranchOut>>, ApiError> {
-    // TODO: Implement list branches logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let limit = query.limit.unwrap_or(20).min(100) as i64;
+    let offset = query.offset.unwrap_or(0) as i64;
+
+    let branches = state
+        .branch_service
+        .list_branches(auth_user.user_id, query.organization_id, limit, offset)
+        .await?;
+
+    Ok(Json(branches))
 }
 
 #[utoipa::path(
@@ -100,13 +114,18 @@ pub async fn list_branches(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn get_branch(
+    auth_user: AuthUser,
     Path(branch_id): Path<Uuid>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<BranchOut>, ApiError> {
-    // TODO: Implement get branch logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let branch = state
+        .branch_service
+        .get_branch(auth_user.user_id, branch_id)
+        .await?;
+
+    Ok(Json(branch))
 }
 
 #[utoipa::path(
@@ -129,14 +148,19 @@ pub async fn get_branch(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn update_branch(
+    auth_user: AuthUser,
     Path(branch_id): Path<Uuid>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Json(request): Json<UpdateBranchRequest>,
 ) -> Result<Json<BranchOut>, ApiError> {
-    // TODO: Implement update branch logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let branch = state
+        .branch_service
+        .update_branch(auth_user.user_id, branch_id, request)
+        .await?;
+
+    Ok(Json(branch))
 }
 
 #[utoipa::path(
@@ -158,11 +182,16 @@ pub async fn update_branch(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn delete_branch(
+    auth_user: AuthUser,
     Path(branch_id): Path<Uuid>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
-    // TODO: Implement delete branch logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    state
+        .branch_service
+        .delete_branch(auth_user.user_id, branch_id)
+        .await?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

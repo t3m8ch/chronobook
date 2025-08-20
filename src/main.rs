@@ -17,10 +17,12 @@ use crate::api::v1::{admin, auth, bookings};
 use crate::config::Config;
 use crate::repositories::auth::PgAuthRepository;
 use crate::repositories::booking::PgBookingRepository;
+use crate::repositories::branch::PgBranchRepository;
 use crate::repositories::token::{RedisTokenRepository, TokenRepository};
 use crate::services::auth::AuthService;
 use crate::services::auth::AuthServiceImpl;
 use crate::services::booking::{BookingService, BookingServiceImpl};
+use crate::services::branch::{BranchService, BranchServiceImpl};
 use crate::services::jwt::JwtManager;
 use crate::services::providers::MockSmsProvider;
 use crate::services::providers::MockTelegramProvider;
@@ -36,6 +38,7 @@ mod services;
 pub struct AppState {
     pub auth_service: Arc<dyn AuthService>,
     pub booking_service: Arc<dyn BookingService>,
+    pub branch_service: Arc<dyn BranchService>,
     pub jwt_manager: Arc<JwtManager>,
     pub jwt_cookie_settings: JwtCookieSettings,
     pub without_validation_arguments: (),
@@ -142,6 +145,7 @@ async fn main() -> anyhow::Result<()> {
 
     let auth_repository = Arc::new(PgAuthRepository::new(pg_pool.clone()));
     let booking_repository = Arc::new(PgBookingRepository::new(pg_pool.clone()));
+    let branch_repository = Arc::new(PgBranchRepository::new(pg_pool.clone()));
 
     let state = AppState {
         auth_service: Arc::new(AuthServiceImpl::new(
@@ -151,7 +155,11 @@ async fn main() -> anyhow::Result<()> {
             jwt_manager.clone(),
             config.telegram_hash_secret.clone(),
         )),
-        booking_service: Arc::new(BookingServiceImpl::new(booking_repository, auth_repository)),
+        booking_service: Arc::new(BookingServiceImpl::new(
+            booking_repository,
+            auth_repository.clone(),
+        )),
+        branch_service: Arc::new(BranchServiceImpl::new(branch_repository, auth_repository)),
         jwt_manager: jwt_manager.clone(),
         jwt_cookie_settings: if cfg!(debug_assertions) {
             JwtCookieSettings {

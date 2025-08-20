@@ -121,3 +121,40 @@ impl From<BookingServiceError> for crate::models::error::ApiError {
         }
     }
 }
+
+#[derive(Error, Debug)]
+pub enum ServiceError {
+    #[error("Not found")]
+    NotFound,
+
+    #[error("Forbidden")]
+    Forbidden,
+
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+
+    #[error("Conflict: {0}")]
+    ConflictError(String),
+
+    #[error("Database error: {0}")]
+    DatabaseError(#[from] sqlx::Error),
+
+    #[error("Internal server error: {0}")]
+    InternalError(String),
+}
+
+impl From<ServiceError> for crate::models::error::ApiError {
+    fn from(err: ServiceError) -> Self {
+        use crate::models::error::ApiError;
+
+        match err {
+            ServiceError::NotFound => ApiError::not_found("Resource not found"),
+            ServiceError::Forbidden => ApiError::forbidden("Access denied"),
+            ServiceError::ValidationError(msg) => ApiError::bad_request(msg),
+            ServiceError::ConflictError(msg) => ApiError::conflict(msg),
+            ServiceError::DatabaseError(_) | ServiceError::InternalError(_) => {
+                ApiError::internal_server_error(err.to_string())
+            }
+        }
+    }
+}

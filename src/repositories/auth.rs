@@ -3,8 +3,9 @@ use chrono::{Duration, Utc};
 use sqlx::{PgPool, Result};
 use uuid::Uuid;
 
-use crate::models::auth::db::{
-    Customer, Organization, PhoneVerifyCode, TelegramVerifyHash, User, UserProfile,
+use crate::models::{
+    auth::db::{Customer, Organization, PhoneVerifyCode, TelegramVerifyHash, User, UserProfile},
+    employee::db::Employee,
 };
 
 #[mockall::automock]
@@ -36,6 +37,12 @@ pub trait AuthRepository: Send + Sync {
     async fn find_customer(&self, user_id: Uuid, organization_id: Uuid)
     -> Result<Option<Customer>>;
     async fn create_customer(&self, user_id: Uuid, organization_id: Uuid) -> Result<Customer>;
+
+    async fn find_employee_by_user_and_org(
+        &self,
+        user_id: Uuid,
+        organization_id: Uuid,
+    ) -> Result<Option<Employee>>;
 
     async fn create_phone_verify_code(&self, user_id: Uuid, code: i32) -> Result<PhoneVerifyCode>;
     async fn find_valid_phone_verify_code(
@@ -281,6 +288,26 @@ impl AuthRepository for PgAuthRepository {
             user_id
         )
         .fetch_one(&self.pool)
+        .await
+    }
+
+    async fn find_employee_by_user_and_org(
+        &self,
+        user_id: Uuid,
+        organization_id: Uuid,
+    ) -> Result<Option<Employee>> {
+        sqlx::query_as!(
+            Employee,
+            r#"
+            SELECT id, created_at, updated_at, contact_phone, contact_email, contact_telegram,
+                   is_owner, is_manager, is_master, organization_id, manager_branch_id, user_id
+            FROM employees
+            WHERE user_id = $1 AND organization_id = $2
+            "#,
+            user_id,
+            organization_id
+        )
+        .fetch_optional(&self.pool)
         .await
     }
 

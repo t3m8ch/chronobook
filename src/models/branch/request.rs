@@ -10,7 +10,7 @@ pub struct CreateBranchRequest {
     pub timezone: String,
     pub street: String,
     pub house_number: String,
-    pub apartment_number: String,
+    pub apartment_number: Option<String>,
     pub city: String,
     pub region: String,
     pub country: String,
@@ -26,7 +26,10 @@ pub struct UpdateBranchRequest {
     pub timezone: Option<String>,
     pub street: Option<String>,
     pub house_number: Option<String>,
-    pub apartment_number: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = true)]
+    /// Apartment number. Send null to clear, omit to keep unchanged
+    pub apartment_number: Option<Option<String>>,
     pub city: Option<String>,
     pub region: Option<String>,
     pub country: Option<String>,
