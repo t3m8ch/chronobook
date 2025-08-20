@@ -63,6 +63,10 @@ impl ApiError {
         Self::new("FORBIDDEN", message)
     }
 
+    pub fn conflict(message: impl Into<String>) -> Self {
+        Self::new("CONFLICT", message)
+    }
+
     pub fn internal_server_error(message: impl Into<String>) -> Self {
         Self::new("INTERNAL_SERVER_ERROR", message)
     }

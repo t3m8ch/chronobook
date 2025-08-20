@@ -8,6 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
+    extractors::auth::AuthUser,
     models::{
         booking::{request::CreateBookingRequest, response::BookingOut},
         branch::{request::GetBranchesQuery, response::BranchOut},
@@ -43,13 +44,16 @@ pub fn router() -> OpenApiRouter<AppState> {
     ),
     tag = "bookings"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn get_organization_by_name(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Path(organization_name): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement
-    Ok(Json(OrganizationOut::default()))
+    let organization = state
+        .booking_service
+        .get_organization_by_name(&organization_name)
+        .await?;
+    Ok(Json(organization))
 }
 
 #[utoipa::path(
@@ -65,13 +69,16 @@ pub async fn get_organization_by_name(
     ),
     tag = "bookings"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn get_services(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Query(query): Query<GetServicesQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement get services logic
-    Ok(Json(Vec::<ServiceOut>::new()))
+    let services = state
+        .booking_service
+        .get_services(&query.organization_name, &query.masters)
+        .await?;
+    Ok(Json(services))
 }
 
 #[utoipa::path(
@@ -88,13 +95,16 @@ pub async fn get_services(
     ),
     tag = "bookings"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn get_masters(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Query(query): Query<GetMastersQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement get masters logic
-    Ok(Json(Vec::<MasterOut>::new()))
+    let masters = state
+        .booking_service
+        .get_masters(&query.organization_name, &query.branches, &query.services)
+        .await?;
+    Ok(Json(masters))
 }
 
 #[utoipa::path(
@@ -110,20 +120,20 @@ pub async fn get_masters(
     ),
     tag = "bookings"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn get_master_by_id(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Path(master_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement
-    Ok(Json(MasterOut::default()))
+    let master = state.booking_service.get_master_by_id(master_id).await?;
+    Ok(Json(master))
 }
 
 #[utoipa::path(
     get,
     path = "/branches",
     params(
-        ("organization_name" = Uuid, Query, description = "Organization name"),
+        ("organization_name" = String, Query, description = "Organization name"),
         ("masters[]" = Vec<Uuid>, Query, description = "Master IDs filter")
     ),
     responses(
@@ -132,24 +142,28 @@ pub async fn get_master_by_id(
     ),
     tag = "bookings"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn get_branches(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Query(query): Query<GetBranchesQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    // TODO: Implement get branches logic
-    Ok(Json(Vec::<BranchOut>::new()))
+    let branches = state
+        .booking_service
+        .get_branches(&query.organization_name, &query.masters)
+        .await?;
+    Ok(Json(branches))
 }
 
 #[utoipa::path(
     get,
     path = "/windows",
     params(
-        ("organization_name" = Uuid, Query, description = "Organization name"),
+        ("organization_name" = String, Query, description = "Organization name"),
+        ("service_id" = Uuid, Query, description = "Service ID"),
         ("masters[]" = Vec<Uuid>, Query, description = "Master IDs filter"),
         ("branches[]" = Vec<Uuid>, Query, description = "Branch IDs filter"),
-        ("min_datetime" = DateTime<Utc>, Query, description = "Min datetime"),
-        ("max_datetime" = DateTime<Utc>, Query, description = "Max datetime"),
+        ("min_datetime" = NaiveDateTime, Query, description = "Min datetime"),
+        ("max_datetime" = NaiveDateTime, Query, description = "Max datetime"),
     ),
     responses(
         (status = 200, description = "List of branches", body = Vec<BranchOut>),
@@ -158,10 +172,11 @@ pub async fn get_branches(
     tag = "bookings"
 )]
 async fn get_windows(
-    State(_state): State<AppState>,
-    Query(_query): Query<GetWindowsQuery>,
+    State(state): State<AppState>,
+    Query(query): Query<GetWindowsQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    Ok(Json(Vec::<WindowOut>::new()))
+    let windows = state.booking_service.get_windows(&query).await?;
+    Ok(Json(windows))
 }
 
 #[utoipa::path(
@@ -182,8 +197,13 @@ async fn get_windows(
     tag = "bookings"
 )]
 async fn create_booking(
-    State(_state): State<AppState>,
-    Json(_request): Json<CreateBookingRequest>,
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Json(request): Json<CreateBookingRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    Ok(Json(BookingOut::default()))
+    let booking = state
+        .booking_service
+        .create_booking(auth_user.user_id, &request)
+        .await?;
+    Ok(Json(booking))
 }

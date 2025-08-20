@@ -88,3 +88,36 @@ impl From<AuthServiceError> for crate::models::error::ApiError {
         }
     }
 }
+
+#[derive(Error, Debug)]
+pub enum BookingServiceError {
+    #[error("Not found: {0}")]
+    NotFound(String),
+
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+
+    #[error("Conflict: {0}")]
+    ConflictError(String),
+
+    #[error("Database error: {0}")]
+    DatabaseError(#[from] sqlx::Error),
+
+    #[error("Internal server error: {0}")]
+    InternalError(String),
+}
+
+impl From<BookingServiceError> for crate::models::error::ApiError {
+    fn from(err: BookingServiceError) -> Self {
+        use crate::models::error::ApiError;
+
+        match err {
+            BookingServiceError::NotFound(msg) => ApiError::not_found(msg),
+            BookingServiceError::ValidationError(msg) => ApiError::bad_request(msg),
+            BookingServiceError::ConflictError(msg) => ApiError::conflict(msg),
+            BookingServiceError::DatabaseError(_) | BookingServiceError::InternalError(_) => {
+                ApiError::internal_server_error(err.to_string())
+            }
+        }
+    }
+}

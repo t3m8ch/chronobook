@@ -48,6 +48,7 @@ pub struct Interval {
 #[serde(rename_all = "camelCase")]
 pub struct GetWindowsQuery {
     pub organization_name: String,
+    pub service_id: Uuid,
     pub masters: Vec<Uuid>,
     pub branches: Vec<Uuid>,
     pub min_datetime: NaiveDateTime,

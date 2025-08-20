@@ -109,6 +109,28 @@ cargo test -- --nocapture  # Show println! output during tests
 - Timezone handling per branch location
 - Flexible service duration (some services may have undefined duration)
 
+### Scheduling Algorithm Implementation
+The booking service implements a sophisticated scheduling algorithm that:
+
+1. **Time Slot Generation**: Generates available slots in 15-minute increments based on service duration
+2. **Schedule Processing**: 
+   - Reads master's timetable with recurrence cycles
+   - Applies day-specific redefinitions for special dates
+   - Supports both weekday (with working/break intervals) and weekend day types
+3. **Interval Subtraction**: 
+   - Subtracts break intervals from working hours
+   - Subtracts existing bookings to find free slots
+   - Handles complex overlapping intervals correctly
+4. **JSONB Schedule Data**: Uses flexible JSONB format for schedule storage:
+   ```json
+   {
+     "dayType": "weekday",
+     "branchId": "uuid",
+     "workingInterval": {"start": "2024-01-01T09:00:00", "end": "2024-01-01T18:00:00"},
+     "breakIntervals": [{"start": "2024-01-01T13:00:00", "end": "2024-01-01T14:00:00"}]
+   }
+   ```
+
 ## Testing Strategy
 
 The codebase uses `yare` for parameterized testing. Key practices:
@@ -229,6 +251,15 @@ curl http://localhost:3222/api/v1/openapi.json  # Get OpenAPI spec
 - `PUT /api/v1/auth/profile` - Create or update user profile
 - `GET /api/v1/auth/profile` - Get user profile
 
+#### Implemented Booking Endpoints
+- `GET /api/v1/bookings/organizations/{organization_name}` - Get organization by name
+- `GET /api/v1/bookings/services?organizationName=X&masters[]=UUID` - Get services filtered by organization and masters
+- `GET /api/v1/bookings/masters?organizationName=X&branches[]=UUID&services[]=UUID` - Get masters filtered by organization, branches, and services
+- `GET /api/v1/bookings/masters/{master_id}` - Get master by ID
+- `GET /api/v1/bookings/branches?organizationName=X&masters[]=UUID` - Get branches filtered by organization and masters
+- `GET /api/v1/bookings/windows?organizationName=X&serviceId=UUID&masters[]=UUID&branches[]=UUID&minDatetime=DT&maxDatetime=DT` - Get available time windows
+- `POST /api/v1/bookings/` - Create a new booking (requires authentication)
+
 ### API Design Patterns
 - **Strong Typing**: Separate request/response models for each endpoint
 - **Error Consistency**: Unified `ApiError` structure across all endpoints
@@ -315,6 +346,7 @@ The project is actively being developed with the following layers implemented:
    - Use `thiserror` for service-specific custom errors
    - Maintain consistent `ApiError` structure for API responses
    - Propagate errors properly through layers
+   - Service errors include: `NotFound`, `ValidationError`, `ConflictError`, `DatabaseError`
 
 4. **Security**
    - Store refresh tokens ONLY in HTTP-only cookies
@@ -423,6 +455,41 @@ curl -X PUT http://localhost:3222/api/v1/auth/profile \
   -d '{"firstName": "", "lastName": "User"}'
 ```
 
+#### Booking Flow
+```bash
+# 1. Get organization details
+curl -X GET http://localhost:3222/api/v1/bookings/organizations/testorg
+
+# 2. Get available services
+curl -X GET 'http://localhost:3222/api/v1/bookings/services?organizationName=testorg'
+
+# 3. Get available masters
+curl -X GET 'http://localhost:3222/api/v1/bookings/masters?organizationName=testorg'
+
+# 4. Get master details
+curl -X GET http://localhost:3222/api/v1/bookings/masters/550e8400-e29b-41d4-a716-446655440000
+
+# 5. Get branches
+curl -X GET 'http://localhost:3222/api/v1/bookings/branches?organizationName=testorg'
+
+# 6. Get available time windows
+curl -X GET 'http://localhost:3222/api/v1/bookings/windows?organizationName=testorg&serviceId=550e8400-e29b-41d4-a716-446655440000&minDatetime=2024-01-01T00:00:00&maxDatetime=2024-01-07T23:59:59'
+
+# 7. Create booking (requires authentication)
+curl -X POST http://localhost:3222/api/v1/bookings/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -d '{
+    "organizationName": "testorg",
+    "serviceId": "550e8400-e29b-41d4-a716-446655440000",
+    "masterId": "550e8400-e29b-41d4-a716-446655440001",
+    "branchId": "550e8400-e29b-41d4-a716-446655440002",
+    "start": "2024-01-01T10:00:00",
+    "end": "2024-01-01T11:00:00",
+    "notifyMethods": ["sms", "telegram"]
+  }'
+```
+
 ### Database Testing with pgcli
 Connect to PostgreSQL and run queries:
 
@@ -463,10 +530,37 @@ echo "\d user_profiles" | pgcli $DATABASE_URL
 echo "SELECT tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY';" | pgcli $DATABASE_URL
 ```
 
+#### Booking and Schedule Queries
+```bash
+# View organizations
+echo "SELECT id, name, display_name FROM organizations;" | pgcli $DATABASE_URL
+
+# View services
+echo "SELECT s.id, s.display_name, s.duration_minutes, s.price, o.name as org_name FROM services s JOIN organizations o ON s.organization_id = o.id;" | pgcli $DATABASE_URL
+
+# View employees (masters)
+echo "SELECT e.id, up.first_name, up.last_name, e.is_master, o.name as org_name FROM employees e JOIN user_profiles up ON e.user_id = up.user_id JOIN organizations o ON e.organization_id = o.id WHERE e.is_master = true;" | pgcli $DATABASE_URL
+
+# View branches
+echo "SELECT b.id, b.display_name, b.timezone, o.name as org_name FROM branches b JOIN organizations o ON b.organization_id = o.id;" | pgcli $DATABASE_URL
+
+# View bookings
+echo "SELECT b.id, b.started_at, b.ended_at, b.status, s.display_name as service, up.first_name || ' ' || up.last_name as master FROM bookings b JOIN services s ON b.service_id = s.id JOIN employees e ON b.master_id = e.id JOIN user_profiles up ON e.user_id = up.user_id ORDER BY b.started_at DESC;" | pgcli $DATABASE_URL
+
+# View master schedules
+echo "SELECT t.master_id, t.recurrence_cycle_start, t.recurrence_cycle_duration_days FROM timetables t;" | pgcli $DATABASE_URL
+
+# View schedule days for a master
+echo "SELECT sd.day_ordinal, sd.day_data FROM schedule_days sd WHERE sd.master_id = 'YOUR_MASTER_ID';" | pgcli $DATABASE_URL
+```
+
 #### Data Cleanup for Testing
 ```bash
 # Clear verification codes
 echo "DELETE FROM phone_verify_codes WHERE used = true OR expire_at < NOW();" | pgcli $DATABASE_URL
+
+# Clear test bookings
+echo "DELETE FROM bookings WHERE started_at < NOW() - INTERVAL '30 days';" | pgcli $DATABASE_URL
 
 # Clear test users (be careful!)
 echo "DELETE FROM user_profiles WHERE user_id IN (SELECT id FROM users WHERE phone LIKE '+7999%');" | pgcli $DATABASE_URL

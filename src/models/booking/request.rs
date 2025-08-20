@@ -6,6 +6,8 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateBookingRequest {
+    pub organization_name: String,
+
     #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
     pub service_id: Uuid,
 

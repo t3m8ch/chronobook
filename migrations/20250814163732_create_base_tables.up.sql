@@ -76,8 +76,8 @@ CREATE TABLE services (
     updated_at TIMESTAMP NOT NULL,
     display_name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    duration_minutes INTEGER,
-    price NUMERIC(19, 2) NOT NULL,
+    duration_minutes INTEGER NOT NULL,
+    price NUMERIC(19, 2),
 
     master_id UUID,
     FOREIGN KEY (master_id) REFERENCES employees(id)

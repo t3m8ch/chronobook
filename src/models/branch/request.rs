@@ -39,7 +39,7 @@ pub struct UpdateBranchRequest {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBranchesQuery {
-    pub organization_name: Uuid,
+    pub organization_name: String,
     #[serde(default)]
     pub masters: Vec<Uuid>,
 }

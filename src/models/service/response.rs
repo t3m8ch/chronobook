@@ -8,8 +8,8 @@ pub struct ServiceOut {
     pub id: Uuid,
     pub name: String,
     pub description: String,
-    pub duration_minutes: Option<u32>,
-    pub price: String,
+    pub duration_minutes: u32,
+    pub price: Option<String>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]

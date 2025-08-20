@@ -7,8 +7,8 @@ use uuid::Uuid;
 pub struct CreateServiceRequest {
     pub display_name: String,
     pub description: String,
-    pub duration_minutes: Option<i32>,
-    pub price: String,
+    pub duration_minutes: i32,
+    pub price: Option<String>,
     pub master_id: Option<Uuid>,
 }
 
@@ -17,11 +17,11 @@ pub struct CreateServiceRequest {
 pub struct UpdateServiceRequest {
     pub display_name: Option<String>,
     pub description: Option<String>,
+    pub duration_minutes: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(nullable = true)]
-    /// Duration in minutes. Send null to clear, omit to keep unchanged
-    pub duration_minutes: Option<Option<i32>>,
-    pub price: Option<String>,
+    /// Price. Send null to clear, omit to keep unchanged
+    pub price: Option<Option<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(nullable = true)]
     /// Master ID. Send null to clear, omit to keep unchanged
@@ -32,5 +32,6 @@ pub struct UpdateServiceRequest {
 #[serde(rename_all = "camelCase")]
 pub struct GetServicesQuery {
     pub organization_name: String,
+    #[serde(default)]
     pub masters: Vec<Uuid>,
 }
