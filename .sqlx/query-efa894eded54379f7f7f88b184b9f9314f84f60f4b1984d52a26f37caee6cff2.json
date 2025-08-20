@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, created_at, hash, expire_at, used, user_id\n            FROM telegram_verify_hashes\n            WHERE user_id = $1 AND hash = $2 AND used = false AND expire_at > $3\n            ORDER BY created_at DESC\n            LIMIT 1\n            ",
+  "query": "\n            SELECT id, created_at, hash, expire_at, used, user_id\n            FROM telegram_verify_hashes\n            WHERE hash = $1 AND used = false AND expire_at > $2\n            ORDER BY created_at DESC\n            LIMIT 1\n            ",
   "describe": {
     "columns": [
       {
@@ -36,7 +36,6 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         "Bytea",
         "Timestamp"
       ]
@@ -47,8 +46,8 @@
       false,
       false,
       false,
-      false
+      true
     ]
   },
-  "hash": "39a9cb5c5844205c64ecb28810bbeb3d6b548ed24a0e88912fe684114c47b9f4"
+  "hash": "efa894eded54379f7f7f88b184b9f9314f84f60f4b1984d52a26f37caee6cff2"
 }

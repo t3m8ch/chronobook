@@ -53,23 +53,7 @@ pub struct RefreshTokenRequest {
 #[serde(rename_all = "camelCase")]
 #[garde(context(()))]
 pub struct TelegramAuthRequest {
-    #[garde(skip)]
-    #[schema(example = 123456789)]
-    pub telegram_id: i64,
-
-    #[garde(skip)]
-    #[schema(example = "john_doe")]
-    pub username: Option<String>,
-
-    #[garde(length(min = 1, max = 100))]
-    #[schema(example = "John")]
-    pub first_name: String,
-
-    #[garde(skip)]
-    #[schema(example = "Doe")]
-    pub last_name: Option<String>,
-
     #[garde(length(min = 1))]
-    #[schema(example = "hash_value")]
+    #[schema(example = "AQCxBk2rRvdsDSUfNz8I0WR0-HCDOP0MD_mKCu6gMv1cQbil9eBZK3EosnwTVJ5y")]
     pub hash: String,
 }

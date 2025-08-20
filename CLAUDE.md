@@ -320,3 +320,5 @@ The project is actively being developed with the following layers implemented:
    - Load configuration only in main.rs using `Config::from_env()`
    - Pass configuration values to components, never read environment variables directly in services/repositories
    - Components should receive configuration through constructors, not environment access
+
+- use pgcli for db testing and curl for api testing

@@ -15,6 +15,12 @@ pub enum AuthServiceError {
     #[error("Invalid telegram hash")]
     InvalidTelegramHash,
 
+    #[error("Telegram hash not verified yet")]
+    TelegramHashNotVerified,
+
+    #[error("Telegram hash already used")]
+    TelegramHashAlreadyUsed,
+
     #[error("User not found")]
     UserNotFound,
 
@@ -58,8 +64,11 @@ impl From<AuthServiceError> for crate::models::error::ApiError {
             AuthServiceError::VerificationCodeExpired => {
                 ApiError::verification_code_expired(err.to_string())
             }
-            AuthServiceError::InvalidTelegramHash => {
+            AuthServiceError::InvalidTelegramHash | AuthServiceError::TelegramHashAlreadyUsed => {
                 ApiError::invalid_telegram_hash(err.to_string())
+            }
+            AuthServiceError::TelegramHashNotVerified => {
+                ApiError::telegram_hash_not_verified(err.to_string())
             }
             AuthServiceError::InvalidRefreshToken => {
                 ApiError::invalid_refresh_token(err.to_string())

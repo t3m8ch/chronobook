@@ -171,7 +171,7 @@ CREATE TABLE telegram_verify_hashes (
     expire_at TIMESTAMP NOT NULL,
     used BOOLEAN NOT NULL,
 
-    user_id UUID NOT NULL,
+    user_id UUID,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

@@ -47,6 +47,10 @@ impl ApiError {
         Self::new("INVALID_TELEGRAM_HASH", message)
     }
 
+    pub fn telegram_hash_not_verified(message: impl Into<String>) -> Self {
+        Self::new("TELEGRAM_HASH_NOT_VERIFIED", message)
+    }
+
     pub fn invalid_refresh_token(message: impl Into<String>) -> Self {
         Self::new("INVALID_REFRESH_TOKEN", message)
     }
@@ -77,6 +81,7 @@ impl IntoResponse for ApiError {
             "INVALID_VERIFICATION_CODE" => StatusCode::BAD_REQUEST,
             "VERIFICATION_CODE_EXPIRED" => StatusCode::BAD_REQUEST,
             "INVALID_TELEGRAM_HASH" => StatusCode::BAD_REQUEST,
+            "TELEGRAM_HASH_NOT_VERIFIED" => StatusCode::BAD_REQUEST,
             "INVALID_REFRESH_TOKEN" => StatusCode::BAD_REQUEST,
             "UNAUTHORIZED" => StatusCode::UNAUTHORIZED,
             "FORBIDDEN" => StatusCode::FORBIDDEN,

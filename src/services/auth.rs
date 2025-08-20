@@ -1,5 +1,8 @@
 use async_trait::async_trait;
-use rand::Rng;
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use hmac::{Hmac, Mac};
+use rand::{Rng, RngCore, rngs::OsRng};
+use sha2::Sha256;
 use std::sync::Arc;
 
 use crate::{
@@ -38,6 +41,12 @@ pub trait AuthService: Send + Sync {
         &self,
         request: &TelegramAuthRequest,
     ) -> Result<(String, String), AuthServiceError>;
+
+    async fn link_telegram_hash(
+        &self,
+        hash: &str,
+        telegram_id: i64,
+    ) -> Result<(), AuthServiceError>;
 
     async fn refresh_token(
         &self,
@@ -159,13 +168,9 @@ impl AuthService for AuthServiceImpl {
     }
 
     async fn login_telegram(&self) -> Result<TelegramVerifyHash, AuthServiceError> {
-        use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
-        use hmac::{Hmac, Mac};
-        use sha2::Sha256;
-
         // Generate random salt (16 bytes for good entropy)
-        let mut rng = rand::thread_rng();
-        let salt: Vec<u8> = (0..16).map(|_| rng.r#gen::<u8>()).collect();
+        let mut salt = vec![0u8; 16];
+        OsRng.fill_bytes(&mut salt);
 
         // Create HMAC-SHA256 with secret key
         type HmacSha256 = Hmac<Sha256>;
@@ -186,6 +191,11 @@ impl AuthService for AuthServiceImpl {
         combined.extend_from_slice(&salt);
         combined.extend_from_slice(&hmac_bytes);
 
+        // Save hash to database (without user_id for now)
+        self.auth_repo
+            .create_telegram_verify_hash(None, combined.clone())
+            .await?;
+
         // Encode to base64url (48 bytes -> 64 chars in base64url without padding)
         let hash_string = URL_SAFE_NO_PAD.encode(&combined);
 
@@ -196,91 +206,34 @@ impl AuthService for AuthServiceImpl {
         &self,
         request: &TelegramAuthRequest,
     ) -> Result<(String, String), AuthServiceError> {
-        use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
-        use hmac::{Hmac, Mac};
-        use sha2::Sha256;
-
         // Decode the hash from base64url
-        let combined_bytes = URL_SAFE_NO_PAD
+        let hash_bytes = URL_SAFE_NO_PAD
             .decode(&request.hash)
             .map_err(|e| AuthServiceError::InternalError(format!("Invalid hash format: {}", e)))?;
 
-        // Extract salt and HMAC (16 bytes salt + 32 bytes HMAC)
-        if combined_bytes.len() != 48 {
-            return Err(AuthServiceError::InvalidTelegramHash);
-        }
-
-        let salt = &combined_bytes[..16];
-        let received_hmac = &combined_bytes[16..];
-
-        // Recreate HMAC with the same salt
-        type HmacSha256 = Hmac<Sha256>;
-        let mut mac =
-            HmacSha256::new_from_slice(self.telegram_hash_secret.as_bytes()).map_err(|e| {
-                AuthServiceError::InternalError(format!("HMAC initialization failed: {}", e))
-            })?;
-
-        mac.update(salt);
-
-        // Verify HMAC
-        let expected_hmac = mac.finalize().into_bytes();
-
-        // Constant-time comparison to prevent timing attacks
-        use subtle::ConstantTimeEq;
-        if received_hmac.ct_eq(&expected_hmac[..]).unwrap_u8() != 1 {
-            return Err(AuthServiceError::InvalidTelegramHash);
-        }
-
-        // Additionally verify with Telegram provider if needed
-        let is_valid = self
-            .telegram_provider
-            .verify_auth_data(
-                request.telegram_id,
-                request.username.clone(),
-                request.first_name.clone(),
-                request.last_name.clone(),
-                request.hash.clone(),
-            )
-            .await
-            .map_err(AuthServiceError::TelegramError)?;
-
-        if !is_valid {
-            return Err(AuthServiceError::InvalidTelegramHash);
-        }
-
-        // Find or create user
-        let user = match self
+        // Find the hash in database
+        let telegram_hash = self
             .auth_repo
-            .find_user_by_telegram_id(request.telegram_id)
+            .find_valid_telegram_hash(&hash_bytes)
             .await?
-        {
-            Some(user) => user,
-            None => {
-                let new_user = self
-                    .auth_repo
-                    .create_user(None, Some(request.telegram_id))
-                    .await?;
+            .ok_or(AuthServiceError::InvalidTelegramHash)?;
 
-                // Create user profile
-                self.auth_repo
-                    .create_user_profile(
-                        new_user.id,
-                        &request.first_name,
-                        request.last_name.as_deref().unwrap_or(""),
-                        None,
-                    )
-                    .await?;
+        // Check if the hash has been linked to a user (bot has processed it)
+        let user_id = telegram_hash
+            .user_id
+            .ok_or(AuthServiceError::TelegramHashNotVerified)?;
 
-                new_user
-            }
-        };
+        // Mark hash as used
+        self.auth_repo
+            .mark_telegram_hash_used(telegram_hash.id)
+            .await?;
 
-        // Update user as verified if not already
-        if user.telegram_verified_at.is_none() {
-            self.auth_repo
-                .update_user_telegram_verified(user.id)
-                .await?;
-        }
+        // Get the user
+        let user = self
+            .auth_repo
+            .find_user_by_id(user_id)
+            .await?
+            .ok_or(AuthServiceError::UserNotFoundById(user_id))?;
 
         // Generate tokens for telegram verification (no specific organization context yet)
         let user_types = vec![];
@@ -297,6 +250,52 @@ impl AuthService for AuthServiceImpl {
             .map_err(|e| AuthServiceError::TokenGenerationError(e.to_string()))?;
 
         Ok((access_token, refresh_token))
+    }
+
+    async fn link_telegram_hash(
+        &self,
+        hash: &str,
+        telegram_id: i64,
+    ) -> Result<(), AuthServiceError> {
+        // Decode the hash from base64url
+        let hash_bytes = URL_SAFE_NO_PAD
+            .decode(hash)
+            .map_err(|e| AuthServiceError::InternalError(format!("Invalid hash format: {}", e)))?;
+
+        // Find the hash in database
+        let telegram_hash = self
+            .auth_repo
+            .find_valid_telegram_hash(&hash_bytes)
+            .await?
+            .ok_or(AuthServiceError::InvalidTelegramHash)?;
+
+        // Check if hash is already linked
+        if telegram_hash.user_id.is_some() {
+            return Err(AuthServiceError::TelegramHashAlreadyUsed);
+        }
+
+        // Find or create user by telegram_id
+        let user = match self.auth_repo.find_user_by_telegram_id(telegram_id).await? {
+            Some(user) => user,
+            None => {
+                // Create new user with telegram_id
+                let new_user = self.auth_repo.create_user(None, Some(telegram_id)).await?;
+
+                // Mark as verified immediately since they're coming from Telegram
+                self.auth_repo
+                    .update_user_telegram_verified(new_user.id)
+                    .await?;
+
+                new_user
+            }
+        };
+
+        // Link hash with user
+        self.auth_repo
+            .update_telegram_hash_user(telegram_hash.id, user.id)
+            .await?;
+
+        Ok(())
     }
 
     async fn refresh_token(

@@ -49,14 +49,11 @@ pub trait AuthRepository: Send + Sync {
 
     async fn create_telegram_verify_hash(
         &self,
-        user_id: Uuid,
+        user_id: Option<Uuid>,
         hash: Vec<u8>,
     ) -> Result<TelegramVerifyHash>;
-    async fn find_valid_telegram_hash(
-        &self,
-        user_id: Uuid,
-        hash: &[u8],
-    ) -> Result<Option<TelegramVerifyHash>>;
+    async fn find_valid_telegram_hash(&self, hash: &[u8]) -> Result<Option<TelegramVerifyHash>>;
+    async fn update_telegram_hash_user(&self, hash_id: Uuid, user_id: Uuid) -> Result<()>;
     async fn mark_telegram_hash_used(&self, id: Uuid) -> Result<()>;
     async fn delete_expired_telegram_hashes(&self) -> Result<u64>;
 }
@@ -381,7 +378,7 @@ impl AuthRepository for PgAuthRepository {
 
     async fn create_telegram_verify_hash(
         &self,
-        user_id: Uuid,
+        user_id: Option<Uuid>,
         hash: Vec<u8>,
     ) -> Result<TelegramVerifyHash> {
         let now = Utc::now();
@@ -400,17 +397,13 @@ impl AuthRepository for PgAuthRepository {
             hash,
             expire_at,
             false,
-            user_id
+            user_id as Option<Uuid>
         )
         .fetch_one(&self.pool)
         .await
     }
 
-    async fn find_valid_telegram_hash(
-        &self,
-        user_id: Uuid,
-        hash: &[u8],
-    ) -> Result<Option<TelegramVerifyHash>> {
+    async fn find_valid_telegram_hash(&self, hash: &[u8]) -> Result<Option<TelegramVerifyHash>> {
         let now = Utc::now();
 
         sqlx::query_as!(
@@ -418,16 +411,30 @@ impl AuthRepository for PgAuthRepository {
             r#"
             SELECT id, created_at, hash, expire_at, used, user_id
             FROM telegram_verify_hashes
-            WHERE user_id = $1 AND hash = $2 AND used = false AND expire_at > $3
+            WHERE hash = $1 AND used = false AND expire_at > $2
             ORDER BY created_at DESC
             LIMIT 1
             "#,
-            user_id,
             hash,
             now.naive_utc()
         )
         .fetch_optional(&self.pool)
         .await
+    }
+
+    async fn update_telegram_hash_user(&self, hash_id: Uuid, user_id: Uuid) -> Result<()> {
+        sqlx::query!(
+            r#"
+            UPDATE telegram_verify_hashes
+            SET user_id = $1
+            WHERE id = $2
+            "#,
+            user_id,
+            hash_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
     }
 
     async fn mark_telegram_hash_used(&self, id: Uuid) -> Result<()> {

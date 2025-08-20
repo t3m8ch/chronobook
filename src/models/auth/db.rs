@@ -59,5 +59,5 @@ pub struct TelegramVerifyHash {
     pub hash: Vec<u8>,
     pub expire_at: NaiveDateTime,
     pub used: bool,
-    pub user_id: Uuid,
+    pub user_id: Option<Uuid>,
 }
