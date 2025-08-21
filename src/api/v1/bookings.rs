@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, Query, State},
     response::IntoResponse,
 };
+use axum_valid::Garde;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
@@ -72,7 +73,7 @@ pub async fn get_organization_by_name(
 #[tracing::instrument(skip(state))]
 pub async fn get_services(
     State(state): State<AppState>,
-    Query(query): Query<GetServicesQuery>,
+    Garde(Query(query)): Garde<Query<GetServicesQuery>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let services = state
         .booking_service
@@ -98,7 +99,7 @@ pub async fn get_services(
 #[tracing::instrument(skip(state))]
 pub async fn get_masters(
     State(state): State<AppState>,
-    Query(query): Query<GetMastersQuery>,
+    Garde(Query(query)): Garde<Query<GetMastersQuery>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let masters = state
         .booking_service
@@ -145,7 +146,7 @@ pub async fn get_master_by_id(
 #[tracing::instrument(skip(state))]
 pub async fn get_branches(
     State(state): State<AppState>,
-    Query(query): Query<GetBranchesQuery>,
+    Garde(Query(query)): Garde<Query<GetBranchesQuery>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let branches = state
         .booking_service
@@ -173,7 +174,7 @@ pub async fn get_branches(
 )]
 async fn get_windows(
     State(state): State<AppState>,
-    Query(query): Query<GetWindowsQuery>,
+    Garde(Query(query)): Garde<Query<GetWindowsQuery>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let windows = state.booking_service.get_windows(&query).await?;
     Ok(Json(windows))
@@ -199,7 +200,7 @@ async fn get_windows(
 async fn create_booking(
     State(state): State<AppState>,
     auth_user: AuthUser,
-    Json(request): Json<CreateBookingRequest>,
+    Garde(Json(request)): Garde<Json<CreateBookingRequest>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let booking = state
         .booking_service

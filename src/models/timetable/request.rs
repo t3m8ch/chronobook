@@ -1,4 +1,5 @@
 use chrono::{NaiveDate, NaiveDateTime};
+use garde::Validate;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -44,13 +45,24 @@ pub struct Interval {
     pub end: NaiveDateTime,
 }
 
-#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct GetWindowsQuery {
+    #[garde(skip)]
     pub organization_name: String,
+
+    #[garde(skip)]
     pub service_id: Uuid,
+
+    #[garde(skip)]
     pub masters: Vec<Uuid>,
+
+    #[garde(skip)]
     pub branches: Vec<Uuid>,
+
+    #[garde(skip)]
     pub min_datetime: NaiveDateTime,
+
+    #[garde(skip)]
     pub max_datetime: NaiveDateTime,
 }

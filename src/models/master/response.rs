@@ -1,3 +1,4 @@
+use garde::Validate;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -14,12 +15,17 @@ pub struct MasterOut {
     pub contact_telegram: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct GetMastersQuery {
+    #[garde(skip)]
     pub organization_name: String,
+
+    #[garde(skip)]
     #[serde(default)]
     pub branches: Vec<Uuid>,
+
+    #[garde(skip)]
     #[serde(default)]
     pub services: Vec<Uuid>,
 }

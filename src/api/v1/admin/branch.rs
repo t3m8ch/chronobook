@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
 };
+use axum_valid::Garde;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
@@ -50,7 +51,7 @@ pub fn router() -> OpenApiRouter<AppState> {
 pub async fn create_branch(
     auth_user: AuthUser,
     State(state): State<AppState>,
-    Json(request): Json<CreateBranchRequest>,
+    Garde(Json(request)): Garde<Json<CreateBranchRequest>>,
 ) -> Result<Json<CreateBranchOut>, ApiError> {
     let result = state
         .branch_service
@@ -81,7 +82,7 @@ pub async fn create_branch(
 #[tracing::instrument(skip(state))]
 pub async fn list_branches(
     auth_user: AuthUser,
-    Query(query): Query<ListQuery>,
+    Garde(Query(query)): Garde<Query<ListQuery>>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<BranchOut>>, ApiError> {
     let limit = query.limit.unwrap_or(20).min(100) as i64;
@@ -153,7 +154,7 @@ pub async fn update_branch(
     auth_user: AuthUser,
     Path(branch_id): Path<Uuid>,
     State(state): State<AppState>,
-    Json(request): Json<UpdateBranchRequest>,
+    Garde(Json(request)): Garde<Json<UpdateBranchRequest>>,
 ) -> Result<Json<BranchOut>, ApiError> {
     let branch = state
         .branch_service

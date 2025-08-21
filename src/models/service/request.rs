@@ -1,3 +1,4 @@
+use garde::Validate;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -28,10 +29,13 @@ pub struct UpdateServiceRequest {
     pub master_id: Option<Option<Uuid>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct GetServicesQuery {
+    #[garde(skip)]
     pub organization_name: String,
+
+    #[garde(skip)]
     #[serde(default)]
     pub masters: Vec<Uuid>,
 }

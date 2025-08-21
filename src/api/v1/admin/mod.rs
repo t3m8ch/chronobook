@@ -2,6 +2,7 @@ use axum::{
     Json,
     extract::{Path, State},
 };
+use garde::Validate;
 use serde::Deserialize;
 use utoipa::IntoParams;
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -28,12 +29,17 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(timetable::router())
 }
 
-#[derive(Debug, Clone, Deserialize, IntoParams)]
+#[derive(Debug, Clone, Deserialize, IntoParams, Validate)]
 pub struct ListQuery {
+    #[garde(skip)]
     /// Organization ID (optional for filtering)
     pub organization_id: Option<Uuid>,
+
+    #[garde(skip)]
     /// Limit number of results (default: 20, max: 100)
     pub limit: Option<usize>,
+
+    #[garde(skip)]
     /// Offset for pagination
     pub offset: Option<usize>,
 }
