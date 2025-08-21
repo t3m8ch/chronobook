@@ -1,69 +1,54 @@
-use crate::models::validation::validate_phone;
 use garde::Validate;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::models::employee::common::EmployeeRole;
+
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 #[garde(context(()))]
 pub struct CreateEmployeeRequest {
-    #[garde(custom(validate_phone))]
+    #[garde(phone_number)]
     #[schema(example = "+1234567890")]
-    pub phone: String,
+    pub contact_phone: Option<String>,
 
-    #[garde(length(min = 1, max = 100))]
-    #[schema(example = "John")]
-    pub first_name: String,
-
-    #[garde(length(min = 1, max = 100))]
-    #[schema(example = "Doe")]
-    pub last_name: String,
-
-    #[garde(length(min = 1, max = 100))]
-    #[schema(example = "Smith")]
-    pub patronymic: Option<String>,
+    #[garde(email)]
+    #[schema(example = "john.doe@example.com")]
+    pub contact_email: Option<String>,
 
     #[garde(skip)]
-    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
-    pub organization_id: Uuid,
+    #[schema(example = "durov")]
+    pub contact_telegram: Option<String>,
 
     #[garde(skip)]
-    #[schema(example = false)]
-    pub is_owner: bool,
+    pub user_id: Uuid,
 
     #[garde(skip)]
-    #[schema(example = false)]
-    pub is_manager: bool,
-
-    #[garde(skip)]
-    #[schema(example = true)]
-    pub is_master: bool,
+    pub roles: Vec<EmployeeRole>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateEmployeeRequest {
-    #[schema(example = "+1234567890")]
-    pub phone: Option<String>,
-
-    #[schema(example = "John")]
-    pub first_name: Option<String>,
-
-    #[schema(example = "Doe")]
-    pub last_name: Option<String>,
-
+    #[garde(phone_number)]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(nullable = true, example = "Smith")]
-    /// Patronymic. Send null to clear, omit to keep unchanged
-    pub patronymic: Option<Option<String>>,
+    #[schema(nullable = true, example = "+1234567890")]
+    pub contact_phone: Option<Option<String>>,
 
-    #[schema(example = false)]
-    pub is_owner: Option<bool>,
+    #[garde(email)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = true, example = "john.doe@example.com")]
+    pub contact_email: Option<Option<String>>,
 
-    #[schema(example = false)]
-    pub is_manager: Option<bool>,
+    #[garde(skip)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = true, example = "durov")]
+    pub contact_telegram: Option<Option<String>>,
 
-    #[schema(example = true)]
-    pub is_master: Option<bool>,
+    #[garde(skip)]
+    pub user_id: Option<Uuid>,
+
+    #[garde(skip)]
+    pub roles: Option<Vec<EmployeeRole>>,
 }
