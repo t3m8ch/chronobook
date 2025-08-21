@@ -3,11 +3,13 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
 };
+use axum_valid::Garde;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
 use crate::{
     AppState,
+    extractors::auth::AuthUser,
     models::{
         employee::{
             request::{CreateEmployeeRequest, UpdateEmployeeRequest},
@@ -45,13 +47,23 @@ pub fn router() -> OpenApiRouter<AppState> {
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn create_employee(
-    State(_state): State<AppState>,
-    Json(request): Json<CreateEmployeeRequest>,
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Garde(Json(request)): Garde<Json<CreateEmployeeRequest>>,
 ) -> Result<Json<CreateEmployeeOut>, ApiError> {
-    // TODO: Implement create employee logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    // Ensure user has an organization context
+    let org_id = auth_user
+        .organization_id
+        .ok_or_else(|| ApiError::new("MISSING_ORGANIZATION", "Organization context required"))?;
+
+    let result = state
+        .employee_service
+        .create_employee(auth_user.user_id, org_id, request)
+        .await?;
+
+    Ok(Json(result))
 }
 
 #[utoipa::path(
@@ -72,13 +84,26 @@ pub async fn create_employee(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn list_employees(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
     Query(query): Query<ListQuery>,
-    State(_state): State<AppState>,
 ) -> Result<Json<Vec<EmployeeOut>>, ApiError> {
-    // TODO: Implement list employees logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    // Ensure user has an organization context
+    let org_id = auth_user
+        .organization_id
+        .ok_or_else(|| ApiError::new("MISSING_ORGANIZATION", "Organization context required"))?;
+
+    let limit = query.limit.unwrap_or(20) as i64;
+    let offset = query.offset.unwrap_or(0) as i64;
+
+    let employees = state
+        .employee_service
+        .list_employees(auth_user.user_id, org_id, limit, offset)
+        .await?;
+
+    Ok(Json(employees))
 }
 
 #[utoipa::path(
@@ -100,13 +125,18 @@ pub async fn list_employees(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn get_employee(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
     Path(employee_id): Path<Uuid>,
-    State(_state): State<AppState>,
 ) -> Result<Json<EmployeeOut>, ApiError> {
-    // TODO: Implement get employee logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let employee = state
+        .employee_service
+        .get_employee(auth_user.user_id, employee_id)
+        .await?;
+
+    Ok(Json(employee))
 }
 
 #[utoipa::path(
@@ -129,14 +159,19 @@ pub async fn get_employee(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn update_employee(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
     Path(employee_id): Path<Uuid>,
-    State(_state): State<AppState>,
-    Json(request): Json<UpdateEmployeeRequest>,
+    Garde(Json(request)): Garde<Json<UpdateEmployeeRequest>>,
 ) -> Result<Json<EmployeeOut>, ApiError> {
-    // TODO: Implement update employee logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let employee = state
+        .employee_service
+        .update_employee(auth_user.user_id, employee_id, request)
+        .await?;
+
+    Ok(Json(employee))
 }
 
 #[utoipa::path(
@@ -158,11 +193,16 @@ pub async fn update_employee(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn delete_employee(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
     Path(employee_id): Path<Uuid>,
-    State(_state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
-    // TODO: Implement delete employee logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    state
+        .employee_service
+        .delete_employee(auth_user.user_id, employee_id)
+        .await?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

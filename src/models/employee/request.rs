@@ -30,6 +30,7 @@ pub struct CreateEmployeeRequest {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema, Validate)]
 #[serde(rename_all = "camelCase")]
+#[garde(context(()))]
 pub struct UpdateEmployeeRequest {
     #[garde(phone_number)]
     #[serde(default, skip_serializing_if = "Option::is_none")]
