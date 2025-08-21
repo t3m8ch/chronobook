@@ -19,6 +19,7 @@ use crate::repositories::auth::PgAuthRepository;
 use crate::repositories::booking::PgBookingRepository;
 use crate::repositories::branch::PgBranchRepository;
 use crate::repositories::employee::PgEmployeeRepository;
+use crate::repositories::organization::OrganizationRepositoryImpl;
 use crate::repositories::token::{RedisTokenRepository, TokenRepository};
 use crate::services::auth::AuthService;
 use crate::services::auth::AuthServiceImpl;
@@ -26,6 +27,7 @@ use crate::services::booking::{BookingService, BookingServiceImpl};
 use crate::services::branch::{BranchService, BranchServiceImpl};
 use crate::services::employee::{EmployeeService, EmployeeServiceImpl};
 use crate::services::jwt::JwtManager;
+use crate::services::organization::{OrganizationService, OrganizationServiceImpl};
 use crate::services::providers::MockSmsProvider;
 use crate::services::providers::MockTelegramProvider;
 
@@ -42,6 +44,7 @@ pub struct AppState {
     pub booking_service: Arc<dyn BookingService>,
     pub branch_service: Arc<dyn BranchService>,
     pub employee_service: Arc<dyn EmployeeService>,
+    pub organization_service: Arc<dyn OrganizationService>,
     pub jwt_manager: Arc<JwtManager>,
     pub jwt_cookie_settings: JwtCookieSettings,
     pub without_validation_arguments: (),
@@ -150,6 +153,7 @@ async fn main() -> anyhow::Result<()> {
     let booking_repository = Arc::new(PgBookingRepository::new(pg_pool.clone()));
     let branch_repository = Arc::new(PgBranchRepository::new(pg_pool.clone()));
     let employee_repository = Arc::new(PgEmployeeRepository::new(pg_pool.clone()));
+    let organization_repository = Arc::new(OrganizationRepositoryImpl::new(pg_pool.clone()));
 
     let state = AppState {
         auth_service: Arc::new(AuthServiceImpl::new(
@@ -168,8 +172,13 @@ async fn main() -> anyhow::Result<()> {
             auth_repository.clone(),
         )),
         employee_service: Arc::new(EmployeeServiceImpl::new(
-            employee_repository,
+            employee_repository.clone(),
             auth_repository,
+        )),
+        organization_service: Arc::new(OrganizationServiceImpl::new(
+            pg_pool.clone(),
+            organization_repository,
+            employee_repository,
         )),
         jwt_manager: jwt_manager.clone(),
         jwt_cookie_settings: if cfg!(debug_assertions) {

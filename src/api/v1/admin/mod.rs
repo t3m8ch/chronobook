@@ -11,6 +11,7 @@ use uuid::Uuid;
 pub mod branch;
 pub mod employee;
 pub mod notification;
+pub mod organizations;
 pub mod service;
 pub mod timetable;
 
@@ -25,6 +26,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(branch::router())
         .merge(employee::router())
         .merge(notification::router())
+        .merge(organizations::router())
         .merge(service::router())
         .merge(timetable::router())
 }
