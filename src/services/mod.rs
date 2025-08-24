@@ -6,3 +6,4 @@ pub mod errors;
 pub mod jwt;
 pub mod organization;
 pub mod providers;
+pub mod service;

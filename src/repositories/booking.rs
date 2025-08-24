@@ -109,12 +109,12 @@ impl BookingRepository for PgBookingRepository {
                 Service,
                 r#"
                 SELECT s.id, s.created_at, s.updated_at, s.display_name, 
-                       s.description, s.duration_minutes, s.price, s.master_id
+                       s.description, s.duration_minutes, s.price, s.master_id, e.organization_id
                 FROM services s
                 LEFT JOIN employees e ON s.master_id = e.id
                 LEFT JOIN organizations o ON e.organization_id = o.id
                 WHERE o.name = $1 OR s.master_id IS NULL
-                GROUP BY s.id
+                GROUP BY s.id, s.created_at, s.updated_at, s.display_name, s.description, s.duration_minutes, s.price, s.master_id, e.organization_id
                 "#,
                 organization_name
             )
@@ -126,8 +126,9 @@ impl BookingRepository for PgBookingRepository {
                 Service,
                 r#"
                 SELECT DISTINCT s.id, s.created_at, s.updated_at, s.display_name, 
-                       s.description, s.duration_minutes, s.price, s.master_id
+                       s.description, s.duration_minutes, s.price, s.master_id, e.organization_id
                 FROM services s
+                LEFT JOIN employees e ON s.master_id = e.id
                 WHERE s.master_id = ANY($1) OR s.master_id IS NULL
                 "#,
                 master_ids
@@ -458,10 +459,11 @@ impl BookingRepository for PgBookingRepository {
         sqlx::query_as!(
             Service,
             r#"
-            SELECT id, created_at, updated_at, display_name, description,
-                   duration_minutes, price, master_id
-            FROM services
-            WHERE id = $1
+            SELECT s.id, s.created_at, s.updated_at, s.display_name, s.description,
+                   s.duration_minutes, s.price, s.master_id, e.organization_id
+            FROM services s
+            LEFT JOIN employees e ON s.master_id = e.id
+            WHERE s.id = $1
             "#,
             service_id
         )

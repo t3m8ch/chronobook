@@ -12,6 +12,12 @@ pub struct AuthUser {
     pub organization_id: Option<Uuid>,
 }
 
+impl AuthUser {
+    pub fn get_organization_id(&self) -> Option<Uuid> {
+        self.organization_id
+    }
+}
+
 impl<S> FromRequestParts<S> for AuthUser
 where
     AppState: FromRef<S>,

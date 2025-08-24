@@ -3,11 +3,13 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
 };
+use axum_valid::Garde;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
 use crate::{
     AppState,
+    extractors::auth::AuthUser,
     models::{
         error::ApiError,
         service::{
@@ -15,6 +17,7 @@ use crate::{
             response::{CreateServiceOut, ServiceOut},
         },
     },
+    services::errors::ServiceError,
 };
 
 use super::ListQuery;
@@ -43,13 +46,30 @@ pub fn router() -> OpenApiRouter<AppState> {
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn create_service(
-    State(_state): State<AppState>,
-    Json(request): Json<CreateServiceRequest>,
+    auth_user: AuthUser,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<CreateServiceRequest>>,
 ) -> Result<Json<CreateServiceOut>, ApiError> {
-    // TODO: Implement create service logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let organization_id = auth_user.get_organization_id().ok_or_else(|| {
+        ApiError::new(
+            "MISSING_ORGANIZATION",
+            "User must belong to an organization",
+        )
+    })?;
+
+    let result = state
+        .service_service
+        .create_service(request, organization_id)
+        .await
+        .map_err(|e| match e {
+            ServiceError::ValidationError(msg) => ApiError::new("VALIDATION_ERROR", &msg),
+            ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
+            _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
+        })?;
+
+    Ok(Json(result))
 }
 
 #[utoipa::path(
@@ -68,13 +88,32 @@ pub async fn create_service(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn list_services(
+    auth_user: AuthUser,
     Query(query): Query<ListQuery>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<Vec<ServiceOut>>, ApiError> {
-    // TODO: Implement list services logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let organization_id = auth_user.get_organization_id().ok_or_else(|| {
+        ApiError::new(
+            "MISSING_ORGANIZATION",
+            "User must belong to an organization",
+        )
+    })?;
+
+    let limit = query.limit.unwrap_or(50).min(100) as i64;
+    let offset = query.offset.unwrap_or(0) as i64;
+
+    let services = state
+        .service_service
+        .list_services(organization_id, limit, offset)
+        .await
+        .map_err(|e| match e {
+            ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
+            _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
+        })?;
+
+    Ok(Json(services))
 }
 
 #[utoipa::path(
@@ -94,13 +133,30 @@ pub async fn list_services(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn get_service(
+    auth_user: AuthUser,
     Path(service_id): Path<Uuid>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<ServiceOut>, ApiError> {
-    // TODO: Implement get service logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let organization_id = auth_user.get_organization_id().ok_or_else(|| {
+        ApiError::new(
+            "MISSING_ORGANIZATION",
+            "User must belong to an organization",
+        )
+    })?;
+
+    let service = state
+        .service_service
+        .get_service(service_id, organization_id)
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound => ApiError::new("NOT_FOUND", "Service not found"),
+            ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
+            _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
+        })?;
+
+    Ok(Json(service))
 }
 
 #[utoipa::path(
@@ -121,14 +177,32 @@ pub async fn get_service(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn update_service(
+    auth_user: AuthUser,
     Path(service_id): Path<Uuid>,
-    State(_state): State<AppState>,
-    Json(request): Json<UpdateServiceRequest>,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<UpdateServiceRequest>>,
 ) -> Result<Json<ServiceOut>, ApiError> {
-    // TODO: Implement update service logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let organization_id = auth_user.get_organization_id().ok_or_else(|| {
+        ApiError::new(
+            "MISSING_ORGANIZATION",
+            "User must belong to an organization",
+        )
+    })?;
+
+    let service = state
+        .service_service
+        .update_service(service_id, request, organization_id)
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound => ApiError::new("NOT_FOUND", "Service not found"),
+            ServiceError::ValidationError(msg) => ApiError::new("VALIDATION_ERROR", &msg),
+            ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
+            _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
+        })?;
+
+    Ok(Json(service))
 }
 
 #[utoipa::path(
@@ -148,11 +222,28 @@ pub async fn update_service(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn delete_service(
+    auth_user: AuthUser,
     Path(service_id): Path<Uuid>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
-    // TODO: Implement delete service logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let organization_id = auth_user.get_organization_id().ok_or_else(|| {
+        ApiError::new(
+            "MISSING_ORGANIZATION",
+            "User must belong to an organization",
+        )
+    })?;
+
+    state
+        .service_service
+        .delete_service(service_id, organization_id)
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound => ApiError::new("NOT_FOUND", "Service not found"),
+            ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
+            _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
+        })?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

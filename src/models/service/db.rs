@@ -12,4 +12,5 @@ pub struct Service {
     pub duration_minutes: i32,
     pub price: Option<BigDecimal>,
     pub master_id: Option<Uuid>,
+    pub organization_id: Option<Uuid>,
 }
