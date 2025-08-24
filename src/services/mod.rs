@@ -7,3 +7,4 @@ pub mod jwt;
 pub mod organization;
 pub mod providers;
 pub mod service;
+pub mod timetable;

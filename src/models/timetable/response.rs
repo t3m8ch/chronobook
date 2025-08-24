@@ -20,6 +20,13 @@ pub struct TimetableOut {
     pub recurrence_cycle_days: i32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TimetableWithRedefinitionsOut {
+    pub timetable: TimetableOut,
+    pub schedule_days: Vec<ScheduleDayOut>,
+    pub redefinitions: Vec<DayRedefinitionOut>,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ScheduleDayOut {

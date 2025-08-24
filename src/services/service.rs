@@ -124,11 +124,11 @@ impl ServiceService for ServiceServiceImpl {
             .find_service_by_id(id)
             .await
             .map_err(ServiceError::DatabaseError)?
-            .ok_or(ServiceError::NotFound)?;
+            .ok_or(ServiceError::NotFound("Service not found".to_string()))?;
 
         // Check organization access
         if service.organization_id != Some(organization_id) {
-            return Err(ServiceError::NotFound); // Return NotFound instead of Forbidden for security
+            return Err(ServiceError::NotFound("Service not found".to_string())); // Return NotFound instead of Forbidden for security
         }
 
         Ok(self.service_to_out(service))
@@ -146,10 +146,10 @@ impl ServiceService for ServiceServiceImpl {
             .find_service_by_id(id)
             .await
             .map_err(ServiceError::DatabaseError)?
-            .ok_or(ServiceError::NotFound)?;
+            .ok_or(ServiceError::NotFound("Service not found".to_string()))?;
 
         if existing_service.organization_id != Some(organization_id) {
-            return Err(ServiceError::NotFound);
+            return Err(ServiceError::NotFound("Service not found".to_string()));
         }
 
         let service = self
@@ -164,7 +164,7 @@ impl ServiceService for ServiceServiceImpl {
             )
             .await
             .map_err(|e| match e {
-                sqlx::Error::RowNotFound => ServiceError::NotFound,
+                sqlx::Error::RowNotFound => ServiceError::NotFound("Service not found".to_string()),
                 _ => ServiceError::DatabaseError(e),
             })?;
 
@@ -178,10 +178,10 @@ impl ServiceService for ServiceServiceImpl {
             .find_service_by_id(id)
             .await
             .map_err(ServiceError::DatabaseError)?
-            .ok_or(ServiceError::NotFound)?;
+            .ok_or(ServiceError::NotFound("Service not found".to_string()))?;
 
         if existing_service.organization_id != Some(organization_id) {
-            return Err(ServiceError::NotFound);
+            return Err(ServiceError::NotFound("Service not found".to_string()));
         }
 
         let deleted = self
@@ -191,7 +191,7 @@ impl ServiceService for ServiceServiceImpl {
             .map_err(ServiceError::DatabaseError)?;
 
         if !deleted {
-            return Err(ServiceError::NotFound);
+            return Err(ServiceError::NotFound("Service not found".to_string()));
         }
 
         Ok(())

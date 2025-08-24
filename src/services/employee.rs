@@ -233,7 +233,7 @@ impl EmployeeService for EmployeeServiceImpl {
             .get(employee_id)
             .await
             .map_err(ServiceError::DatabaseError)?
-            .ok_or(ServiceError::NotFound)?;
+            .ok_or(ServiceError::NotFound("Employee not found".to_string()))?;
 
         // Check if requesting user has permission to view this employee
         self.check_user_permission(user_id, employee.organization_id, false)
@@ -270,7 +270,7 @@ impl EmployeeService for EmployeeServiceImpl {
             .get(employee_id)
             .await
             .map_err(ServiceError::DatabaseError)?
-            .ok_or(ServiceError::NotFound)?;
+            .ok_or(ServiceError::NotFound("Employee not found".to_string()))?;
 
         // Check if requesting user is an owner of the organization
         self.check_user_permission(user_id, current.organization_id, true)
@@ -300,7 +300,7 @@ impl EmployeeService for EmployeeServiceImpl {
             )
             .await
             .map_err(ServiceError::DatabaseError)?
-            .ok_or(ServiceError::NotFound)?;
+            .ok_or(ServiceError::NotFound("Employee not found".to_string()))?;
 
         // Convert to response DTO
         let roles = Self::convert_flags_to_roles(
@@ -328,7 +328,7 @@ impl EmployeeService for EmployeeServiceImpl {
             .get(employee_id)
             .await
             .map_err(ServiceError::DatabaseError)?
-            .ok_or(ServiceError::NotFound)?;
+            .ok_or(ServiceError::NotFound("Employee not found".to_string()))?;
 
         // Check if requesting user is an owner of the organization
         self.check_user_permission(user_id, employee.organization_id, true)
@@ -349,7 +349,7 @@ impl EmployeeService for EmployeeServiceImpl {
             .map_err(ServiceError::DatabaseError)?;
 
         if !deleted {
-            return Err(ServiceError::NotFound);
+            return Err(ServiceError::NotFound("Employee not found".to_string()));
         }
 
         Ok(())

@@ -151,7 +151,7 @@ pub async fn get_service(
         .get_service(service_id, organization_id)
         .await
         .map_err(|e| match e {
-            ServiceError::NotFound => ApiError::new("NOT_FOUND", "Service not found"),
+            ServiceError::NotFound(_) => ApiError::new("NOT_FOUND", "Service not found"),
             ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
             _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
         })?;
@@ -196,7 +196,7 @@ pub async fn update_service(
         .update_service(service_id, request, organization_id)
         .await
         .map_err(|e| match e {
-            ServiceError::NotFound => ApiError::new("NOT_FOUND", "Service not found"),
+            ServiceError::NotFound(_) => ApiError::new("NOT_FOUND", "Service not found"),
             ServiceError::ValidationError(msg) => ApiError::new("VALIDATION_ERROR", &msg),
             ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
             _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
@@ -240,7 +240,7 @@ pub async fn delete_service(
         .delete_service(service_id, organization_id)
         .await
         .map_err(|e| match e {
-            ServiceError::NotFound => ApiError::new("NOT_FOUND", "Service not found"),
+            ServiceError::NotFound(_) => ApiError::new("NOT_FOUND", "Service not found"),
             ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
             _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
         })?;

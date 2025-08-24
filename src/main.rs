@@ -21,6 +21,7 @@ use crate::repositories::branch::PgBranchRepository;
 use crate::repositories::employee::PgEmployeeRepository;
 use crate::repositories::organization::OrganizationRepositoryImpl;
 use crate::repositories::service::{ServiceRepository, ServiceRepositoryImpl};
+use crate::repositories::timetable::{TimetableRepository, TimetableRepositoryImpl};
 use crate::repositories::token::{RedisTokenRepository, TokenRepository};
 use crate::services::auth::AuthService;
 use crate::services::auth::AuthServiceImpl;
@@ -32,6 +33,7 @@ use crate::services::organization::{OrganizationService, OrganizationServiceImpl
 use crate::services::providers::MockSmsProvider;
 use crate::services::providers::MockTelegramProvider;
 use crate::services::service::{ServiceService, ServiceServiceImpl};
+use crate::services::timetable::{TimetableService, TimetableServiceImpl};
 
 mod api;
 mod config;
@@ -48,6 +50,7 @@ pub struct AppState {
     pub employee_service: Arc<dyn EmployeeService>,
     pub organization_service: Arc<dyn OrganizationService>,
     pub service_service: Arc<dyn ServiceService>,
+    pub timetable_service: Arc<dyn TimetableService>,
     pub jwt_manager: Arc<JwtManager>,
     pub jwt_cookie_settings: JwtCookieSettings,
     pub without_validation_arguments: (),
@@ -158,6 +161,7 @@ async fn main() -> anyhow::Result<()> {
     let employee_repository = Arc::new(PgEmployeeRepository::new(pg_pool.clone()));
     let organization_repository = Arc::new(OrganizationRepositoryImpl::new(pg_pool.clone()));
     let service_repository = Arc::new(ServiceRepositoryImpl::new(pg_pool.clone()));
+    let timetable_repository = Arc::new(TimetableRepositoryImpl::new(pg_pool.clone()));
 
     let state = AppState {
         auth_service: Arc::new(AuthServiceImpl::new(
@@ -185,6 +189,7 @@ async fn main() -> anyhow::Result<()> {
             employee_repository.clone(),
         )),
         service_service: Arc::new(ServiceServiceImpl::new(service_repository)),
+        timetable_service: Arc::new(TimetableServiceImpl::new(timetable_repository)),
         jwt_manager: jwt_manager.clone(),
         jwt_cookie_settings: if cfg!(debug_assertions) {
             JwtCookieSettings {

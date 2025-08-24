@@ -3,9 +3,8 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
 };
+use axum_valid::Garde;
 use chrono::NaiveDate;
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
@@ -17,7 +16,7 @@ use crate::{
             request::{
                 CreateDayRedefinitionRequest, CreateTimetableRequest, UpdateTimetableRequest,
             },
-            response::{DayRedefinitionOut, ScheduleDayOut, TimetableOut},
+            response::{TimetableOut, TimetableWithRedefinitionsOut},
         },
     },
 };
@@ -33,13 +32,6 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(delete_timetable))
         .routes(routes!(create_day_redefinition))
         .routes(routes!(delete_day_redefinition))
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-pub struct TimetableWithRedefinitionsOut {
-    pub timetable: TimetableOut,
-    pub schedule_days: Vec<ScheduleDayOut>,
-    pub redefinitions: Vec<DayRedefinitionOut>,
 }
 
 #[utoipa::path(
@@ -59,13 +51,17 @@ pub struct TimetableWithRedefinitionsOut {
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn create_timetable(
-    State(_state): State<AppState>,
-    Json(request): Json<CreateTimetableRequest>,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<CreateTimetableRequest>>,
 ) -> Result<StatusCode, ApiError> {
-    // TODO: Implement create timetable logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    state
+        .timetable_service
+        .create_timetable(request)
+        .await
+        .map_err(|e| ApiError::new("TIMETABLE_CREATE_ERROR", &e.to_string()))?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(
@@ -86,13 +82,17 @@ pub async fn create_timetable(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn list_timetables(
     Query(query): Query<ListQuery>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<Vec<TimetableOut>>, ApiError> {
-    // TODO: Implement list timetables logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let timetables = state
+        .timetable_service
+        .list_timetables(query.organization_id)
+        .await
+        .map_err(|e| ApiError::new("TIMETABLES_LIST_ERROR", &e.to_string()))?;
+    Ok(Json(timetables))
 }
 
 #[utoipa::path(
@@ -114,13 +114,22 @@ pub async fn list_timetables(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn get_timetable_with_redefinitions(
     Path(master_id): Path<Uuid>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<TimetableWithRedefinitionsOut>, ApiError> {
-    // TODO: Implement get timetable with redefinitions logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let timetable_with_redefinitions = state
+        .timetable_service
+        .get_timetable_with_redefinitions(master_id)
+        .await
+        .map_err(|e| match &e {
+            crate::services::errors::ServiceError::NotFound(_) => {
+                ApiError::new("TIMETABLE_NOT_FOUND", "Timetable not found")
+            }
+            _ => ApiError::new("TIMETABLE_GET_ERROR", &e.to_string()),
+        })?;
+    Ok(Json(timetable_with_redefinitions))
 }
 
 #[utoipa::path(
@@ -143,14 +152,23 @@ pub async fn get_timetable_with_redefinitions(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn update_timetable(
     Path(master_id): Path<Uuid>,
-    State(_state): State<AppState>,
-    Json(request): Json<UpdateTimetableRequest>,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<UpdateTimetableRequest>>,
 ) -> Result<Json<TimetableOut>, ApiError> {
-    // TODO: Implement update timetable logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    let updated_timetable = state
+        .timetable_service
+        .update_timetable(master_id, request)
+        .await
+        .map_err(|e| match &e {
+            crate::services::errors::ServiceError::NotFound(_) => {
+                ApiError::new("TIMETABLE_NOT_FOUND", "Timetable not found")
+            }
+            _ => ApiError::new("TIMETABLE_UPDATE_ERROR", &e.to_string()),
+        })?;
+    Ok(Json(updated_timetable))
 }
 
 #[utoipa::path(
@@ -172,13 +190,22 @@ pub async fn update_timetable(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn delete_timetable(
     Path(master_id): Path<Uuid>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
-    // TODO: Implement delete timetable logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    state
+        .timetable_service
+        .delete_timetable(master_id)
+        .await
+        .map_err(|e| match &e {
+            crate::services::errors::ServiceError::NotFound(_) => {
+                ApiError::new("TIMETABLE_NOT_FOUND", "Timetable not found")
+            }
+            _ => ApiError::new("TIMETABLE_DELETE_ERROR", &e.to_string()),
+        })?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(
@@ -198,13 +225,22 @@ pub async fn delete_timetable(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn create_day_redefinition(
-    State(_state): State<AppState>,
-    Json(request): Json<CreateDayRedefinitionRequest>,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<CreateDayRedefinitionRequest>>,
 ) -> Result<StatusCode, ApiError> {
-    // TODO: Implement create day redefinition logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    state
+        .timetable_service
+        .create_day_redefinition(request)
+        .await
+        .map_err(|e| match &e {
+            crate::services::errors::ServiceError::NotFound(_) => {
+                ApiError::new("TIMETABLE_NOT_FOUND", "Timetable not found for this master")
+            }
+            _ => ApiError::new("DAY_REDEFINITION_CREATE_ERROR", &e.to_string()),
+        })?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(
@@ -227,11 +263,20 @@ pub async fn create_day_redefinition(
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state))]
 pub async fn delete_day_redefinition(
     Path((master_id, date)): Path<(Uuid, NaiveDate)>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
-    // TODO: Implement delete day redefinition logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    state
+        .timetable_service
+        .delete_day_redefinition(master_id, date)
+        .await
+        .map_err(|e| match &e {
+            crate::services::errors::ServiceError::NotFound(_) => {
+                ApiError::new("DAY_REDEFINITION_NOT_FOUND", "Day redefinition not found")
+            }
+            _ => ApiError::new("DAY_REDEFINITION_DELETE_ERROR", &e.to_string()),
+        })?;
+    Ok(StatusCode::NO_CONTENT)
 }

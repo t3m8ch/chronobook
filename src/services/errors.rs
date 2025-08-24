@@ -122,10 +122,12 @@ impl From<BookingServiceError> for crate::models::error::ApiError {
     }
 }
 
+pub type ServiceResult<T> = Result<T, ServiceError>;
+
 #[derive(Error, Debug)]
 pub enum ServiceError {
-    #[error("Not found")]
-    NotFound,
+    #[error("Not found: {0}")]
+    NotFound(String),
 
     #[error("Forbidden")]
     Forbidden,
@@ -148,7 +150,7 @@ impl From<ServiceError> for crate::models::error::ApiError {
         use crate::models::error::ApiError;
 
         match err {
-            ServiceError::NotFound => ApiError::not_found("Resource not found"),
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
             ServiceError::Forbidden => ApiError::forbidden("Access denied"),
             ServiceError::ValidationError(msg) => ApiError::bad_request(msg),
             ServiceError::ConflictError(msg) => ApiError::conflict(msg),

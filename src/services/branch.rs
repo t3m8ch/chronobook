@@ -95,7 +95,7 @@ impl BranchServiceImpl {
             .get_organization_id(branch_id)
             .await
             .map_err(ServiceError::DatabaseError)?
-            .ok_or(ServiceError::NotFound)?;
+            .ok_or(ServiceError::NotFound("Branch not found".to_string()))?;
 
         // Check if user is an employee of the organization
         let employee = self
@@ -215,7 +215,7 @@ impl BranchService for BranchServiceImpl {
             .get(branch_id)
             .await
             .map_err(ServiceError::DatabaseError)?
-            .ok_or(ServiceError::NotFound)?;
+            .ok_or(ServiceError::NotFound("Branch not found".to_string()))?;
 
         // Check if user has permission to view this branch
         let employee = self
@@ -272,7 +272,7 @@ impl BranchService for BranchServiceImpl {
             )
             .await
             .map_err(ServiceError::DatabaseError)?
-            .ok_or(ServiceError::NotFound)?;
+            .ok_or(ServiceError::NotFound("Branch not found".to_string()))?;
 
         // Convert to response DTO
         Ok(BranchOut {
@@ -303,7 +303,7 @@ impl BranchService for BranchServiceImpl {
             .map_err(ServiceError::DatabaseError)?;
 
         if !deleted {
-            return Err(ServiceError::NotFound);
+            return Err(ServiceError::NotFound("Branch not found".to_string()));
         }
 
         Ok(())
