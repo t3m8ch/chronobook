@@ -19,9 +19,10 @@ use crate::repositories::auth::PgAuthRepository;
 use crate::repositories::booking::PgBookingRepository;
 use crate::repositories::branch::PgBranchRepository;
 use crate::repositories::employee::PgEmployeeRepository;
+use crate::repositories::notification::PostgresNotificationRepository;
 use crate::repositories::organization::OrganizationRepositoryImpl;
-use crate::repositories::service::{ServiceRepository, ServiceRepositoryImpl};
-use crate::repositories::timetable::{TimetableRepository, TimetableRepositoryImpl};
+use crate::repositories::service::ServiceRepositoryImpl;
+use crate::repositories::timetable::TimetableRepositoryImpl;
 use crate::repositories::token::{RedisTokenRepository, TokenRepository};
 use crate::services::auth::AuthService;
 use crate::services::auth::AuthServiceImpl;
@@ -29,6 +30,7 @@ use crate::services::booking::{BookingService, BookingServiceImpl};
 use crate::services::branch::{BranchService, BranchServiceImpl};
 use crate::services::employee::{EmployeeService, EmployeeServiceImpl};
 use crate::services::jwt::JwtManager;
+use crate::services::notification::{NotificationService, NotificationServiceImpl};
 use crate::services::organization::{OrganizationService, OrganizationServiceImpl};
 use crate::services::providers::MockSmsProvider;
 use crate::services::providers::MockTelegramProvider;
@@ -48,6 +50,7 @@ pub struct AppState {
     pub booking_service: Arc<dyn BookingService>,
     pub branch_service: Arc<dyn BranchService>,
     pub employee_service: Arc<dyn EmployeeService>,
+    pub notification_service: Arc<dyn NotificationService>,
     pub organization_service: Arc<dyn OrganizationService>,
     pub service_service: Arc<dyn ServiceService>,
     pub timetable_service: Arc<dyn TimetableService>,
@@ -156,6 +159,7 @@ async fn main() -> anyhow::Result<()> {
     let booking_repository = Arc::new(PgBookingRepository::new(pg_pool.clone()));
     let branch_repository = Arc::new(PgBranchRepository::new(pg_pool.clone()));
     let employee_repository = Arc::new(PgEmployeeRepository::new(pg_pool.clone()));
+    let notification_repository = Arc::new(PostgresNotificationRepository::new(pg_pool.clone()));
     let organization_repository = Arc::new(OrganizationRepositoryImpl::new(pg_pool.clone()));
     let service_repository = Arc::new(ServiceRepositoryImpl::new(pg_pool.clone()));
     let timetable_repository = Arc::new(TimetableRepositoryImpl::new(pg_pool.clone()));
@@ -179,6 +183,11 @@ async fn main() -> anyhow::Result<()> {
         employee_service: Arc::new(EmployeeServiceImpl::new(
             employee_repository.clone(),
             auth_repository,
+        )),
+        notification_service: Arc::new(NotificationServiceImpl::new(
+            notification_repository,
+            sms_provider.clone(),
+            telegram_provider.clone(),
         )),
         organization_service: Arc::new(OrganizationServiceImpl::new(
             pg_pool.clone(),

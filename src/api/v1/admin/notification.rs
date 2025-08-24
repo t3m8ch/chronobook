@@ -3,6 +3,8 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
+use axum_valid::Garde;
+use chrono::{DateTime, Utc};
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
 
@@ -17,8 +19,8 @@ use crate::{
             SendBulkNotificationRequest, UpdateNotificationSettingsRequest,
             UpdateNotificationTemplateRequest,
         },
-        validation::ValidationExt,
     },
+    services::errors::ServiceError,
 };
 
 pub fn router() -> OpenApiRouter<AppState> {
@@ -52,11 +54,20 @@ pub fn router() -> OpenApiRouter<AppState> {
     tag = "admin"
 )]
 pub async fn get_notification_settings(
-    State(_state): State<AppState>,
-    Path(_branch_id): Path<Uuid>,
+    State(state): State<AppState>,
+    Path(branch_id): Path<Uuid>,
 ) -> Result<Json<NotificationSettingsResponse>, ApiError> {
-    // TODO: Implement notification settings retrieval
-    todo!("Implement get_notification_settings")
+    let settings = state
+        .notification_service
+        .get_notification_settings(branch_id)
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
+            ServiceError::DatabaseError(_) => ApiError::internal_server_error(e.to_string()),
+            _ => ApiError::internal_server_error(e.to_string()),
+        })?;
+
+    Ok(Json(settings))
 }
 
 #[utoipa::path(
@@ -75,12 +86,27 @@ pub async fn get_notification_settings(
     tag = "admin"
 )]
 pub async fn update_notification_settings(
-    State(_state): State<AppState>,
-    Json(request): Json<UpdateNotificationSettingsRequest>,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<UpdateNotificationSettingsRequest>>,
 ) -> Result<Json<NotificationSettingsResponse>, ApiError> {
-    request.validate_ext()?;
-    // TODO: Implement notification settings update
-    todo!("Implement update_notification_settings")
+    let settings = state
+        .notification_service
+        .update_notification_settings(
+            request.branch_id,
+            request.quiet_hours_start,
+            request.quiet_hours_end,
+            request.smart_boundary_hours,
+            request.critical_threshold_hours,
+        )
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
+            ServiceError::ValidationError(msg) => ApiError::bad_request(msg),
+            ServiceError::DatabaseError(_) => ApiError::internal_server_error(e.to_string()),
+            _ => ApiError::internal_server_error(e.to_string()),
+        })?;
+
+    Ok(Json(settings))
 }
 
 #[utoipa::path(
@@ -100,11 +126,20 @@ pub async fn update_notification_settings(
     tag = "admin"
 )]
 pub async fn get_notification_templates(
-    State(_state): State<AppState>,
-    Path(_branch_id): Path<Uuid>,
+    State(state): State<AppState>,
+    Path(branch_id): Path<Uuid>,
 ) -> Result<Json<Vec<NotificationTemplateResponse>>, ApiError> {
-    // TODO: Implement notification templates retrieval
-    todo!("Implement get_notification_templates")
+    let templates = state
+        .notification_service
+        .get_notification_templates(branch_id)
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
+            ServiceError::DatabaseError(_) => ApiError::internal_server_error(e.to_string()),
+            _ => ApiError::internal_server_error(e.to_string()),
+        })?;
+
+    Ok(Json(templates))
 }
 
 #[utoipa::path(
@@ -124,12 +159,27 @@ pub async fn get_notification_templates(
     tag = "admin"
 )]
 pub async fn create_notification_template(
-    State(_state): State<AppState>,
-    Json(request): Json<CreateNotificationTemplateRequest>,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<CreateNotificationTemplateRequest>>,
 ) -> Result<(StatusCode, Json<NotificationTemplateResponse>), ApiError> {
-    request.validate_ext()?;
-    // TODO: Implement notification template creation
-    todo!("Implement create_notification_template")
+    let template = state
+        .notification_service
+        .create_notification_template(
+            request.branch_id,
+            request.template_type,
+            request.method,
+            request.body,
+        )
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
+            ServiceError::ConflictError(msg) => ApiError::conflict(msg),
+            ServiceError::ValidationError(msg) => ApiError::bad_request(msg),
+            ServiceError::DatabaseError(_) => ApiError::internal_server_error(e.to_string()),
+            _ => ApiError::internal_server_error(e.to_string()),
+        })?;
+
+    Ok((StatusCode::CREATED, Json(template)))
 }
 
 #[utoipa::path(
@@ -150,11 +200,20 @@ pub async fn create_notification_template(
     tag = "admin"
 )]
 pub async fn get_notification_template(
-    State(_state): State<AppState>,
-    Path((_branch_id, _template_id)): Path<(Uuid, Uuid)>,
+    State(state): State<AppState>,
+    Path((branch_id, template_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<NotificationTemplateResponse>, ApiError> {
-    // TODO: Implement notification template retrieval
-    todo!("Implement get_notification_template")
+    let template = state
+        .notification_service
+        .get_notification_template(branch_id, template_id)
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
+            ServiceError::DatabaseError(_) => ApiError::internal_server_error(e.to_string()),
+            _ => ApiError::internal_server_error(e.to_string()),
+        })?;
+
+    Ok(Json(template))
 }
 
 #[utoipa::path(
@@ -173,12 +232,26 @@ pub async fn get_notification_template(
     tag = "admin"
 )]
 pub async fn update_notification_template(
-    State(_state): State<AppState>,
-    Json(request): Json<UpdateNotificationTemplateRequest>,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<UpdateNotificationTemplateRequest>>,
 ) -> Result<Json<NotificationTemplateResponse>, ApiError> {
-    request.validate_ext()?;
-    // TODO: Implement notification template update
-    todo!("Implement update_notification_template")
+    let template = state
+        .notification_service
+        .update_notification_template(
+            request.template_id,
+            request.template_type,
+            request.method,
+            request.body,
+        )
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
+            ServiceError::ValidationError(msg) => ApiError::bad_request(msg),
+            ServiceError::DatabaseError(_) => ApiError::internal_server_error(e.to_string()),
+            _ => ApiError::internal_server_error(e.to_string()),
+        })?;
+
+    Ok(Json(template))
 }
 
 #[utoipa::path(
@@ -196,12 +269,20 @@ pub async fn update_notification_template(
     tag = "admin"
 )]
 pub async fn delete_notification_template(
-    State(_state): State<AppState>,
-    Json(request): Json<DeleteNotificationTemplateRequest>,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<DeleteNotificationTemplateRequest>>,
 ) -> Result<StatusCode, ApiError> {
-    request.validate_ext()?;
-    // TODO: Implement notification template deletion
-    todo!("Implement delete_notification_template")
+    state
+        .notification_service
+        .delete_notification_template(request.template_id)
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
+            ServiceError::DatabaseError(_) => ApiError::internal_server_error(e.to_string()),
+            _ => ApiError::internal_server_error(e.to_string()),
+        })?;
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(
@@ -220,12 +301,37 @@ pub async fn delete_notification_template(
     tag = "admin"
 )]
 pub async fn send_bulk_notification(
-    State(_state): State<AppState>,
-    Json(request): Json<SendBulkNotificationRequest>,
+    State(state): State<AppState>,
+    Garde(Json(request)): Garde<Json<SendBulkNotificationRequest>>,
 ) -> Result<Json<BulkNotificationResponse>, ApiError> {
-    request.validate_ext()?;
-    // TODO: Implement bulk notification sending
-    todo!("Implement send_bulk_notification")
+    let scheduled_at = if let Some(scheduled_str) = request.scheduled_at {
+        Some(
+            DateTime::parse_from_rfc3339(&scheduled_str)
+                .map_err(|_| ApiError::bad_request("Invalid scheduled_at format"))?
+                .with_timezone(&Utc),
+        )
+    } else {
+        None
+    };
+
+    let response = state
+        .notification_service
+        .send_bulk_notification(
+            request.branch_id,
+            request.recipients,
+            request.method,
+            request.message,
+            scheduled_at,
+        )
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
+            ServiceError::ValidationError(msg) => ApiError::bad_request(msg),
+            ServiceError::DatabaseError(_) => ApiError::internal_server_error(e.to_string()),
+            _ => ApiError::internal_server_error(e.to_string()),
+        })?;
+
+    Ok(Json(response))
 }
 
 #[utoipa::path(
@@ -245,11 +351,20 @@ pub async fn send_bulk_notification(
     tag = "admin"
 )]
 pub async fn get_scheduled_notifications(
-    State(_state): State<AppState>,
-    Path(_branch_id): Path<Uuid>,
+    State(state): State<AppState>,
+    Path(branch_id): Path<Uuid>,
 ) -> Result<Json<Vec<ScheduledNotificationResponse>>, ApiError> {
-    // TODO: Implement scheduled notifications retrieval
-    todo!("Implement get_scheduled_notifications")
+    let notifications = state
+        .notification_service
+        .get_scheduled_notifications(branch_id)
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
+            ServiceError::DatabaseError(_) => ApiError::internal_server_error(e.to_string()),
+            _ => ApiError::internal_server_error(e.to_string()),
+        })?;
+
+    Ok(Json(notifications))
 }
 
 #[utoipa::path(
@@ -269,9 +384,18 @@ pub async fn get_scheduled_notifications(
     tag = "admin"
 )]
 pub async fn get_booking_notifications(
-    State(_state): State<AppState>,
-    Path(_booking_id): Path<Uuid>,
+    State(state): State<AppState>,
+    Path(booking_id): Path<Uuid>,
 ) -> Result<Json<Vec<ScheduledNotificationResponse>>, ApiError> {
-    // TODO: Implement booking notifications retrieval
-    todo!("Implement get_booking_notifications")
+    let notifications = state
+        .notification_service
+        .get_booking_notifications(booking_id)
+        .await
+        .map_err(|e| match e {
+            ServiceError::NotFound(msg) => ApiError::not_found(msg),
+            ServiceError::DatabaseError(_) => ApiError::internal_server_error(e.to_string()),
+            _ => ApiError::internal_server_error(e.to_string()),
+        })?;
+
+    Ok(Json(notifications))
 }

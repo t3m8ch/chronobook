@@ -4,6 +4,7 @@ pub mod branch;
 pub mod employee;
 pub mod errors;
 pub mod jwt;
+pub mod notification;
 pub mod organization;
 pub mod providers;
 pub mod service;

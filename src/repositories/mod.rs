@@ -2,6 +2,7 @@ pub mod auth;
 pub mod booking;
 pub mod branch;
 pub mod employee;
+pub mod notification;
 pub mod organization;
 pub mod service;
 pub mod timetable;
