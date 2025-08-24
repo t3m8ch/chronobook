@@ -124,9 +124,6 @@ async fn main() -> anyhow::Result<()> {
         let mut telegram_provider = MockTelegramProvider::new();
         telegram_provider.expect_send_message().return_const(Ok(()));
         telegram_provider
-            .expect_send_notification()
-            .return_const(Ok(()));
-        telegram_provider
             .expect_generate_auth_hash()
             .return_const(Ok(Vec::new()));
         telegram_provider
