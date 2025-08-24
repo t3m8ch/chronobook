@@ -197,24 +197,13 @@ async fn main() -> anyhow::Result<()> {
         service_service: Arc::new(ServiceServiceImpl::new(service_repository)),
         timetable_service: Arc::new(TimetableServiceImpl::new(timetable_repository)),
         jwt_manager: jwt_manager.clone(),
-        jwt_cookie_settings: if cfg!(debug_assertions) {
-            JwtCookieSettings {
-                cookie_name: "refresh_token".to_string(),
-                http_only: true,
-                secure: false,
-                same_site: SameSite::Lax,
-                max_age: config.jwt_refresh_duration,
-                path: "/".to_string(),
-            }
-        } else {
-            JwtCookieSettings {
-                cookie_name: "refresh_token".to_string(),
-                http_only: true,
-                secure: true,
-                same_site: SameSite::Lax,
-                max_age: config.jwt_refresh_duration,
-                path: "/".to_string(),
-            }
+        jwt_cookie_settings: JwtCookieSettings {
+            cookie_name: "refresh_token".to_string(),
+            http_only: true,
+            secure: !cfg!(debug_assertions),
+            same_site: SameSite::Lax,
+            max_age: config.jwt_refresh_duration,
+            path: "/".to_string(),
         },
         without_validation_arguments: (),
     };
