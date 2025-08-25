@@ -35,7 +35,10 @@ cargo test -- --nocapture  # Show println! output during tests
 ```
 /src/
 ├── main.rs              # Application entry point with Axum server and OpenAPI setup
-├── config.rs            # Application configuration management
+├── config.rs            # Application configuration management with envy
+├── extractors/          # Custom Axum extractors
+│   ├── mod.rs          # Extractor module definitions
+│   └── auth.rs         # AuthUser JWT extractor for protected endpoints
 ├── api/                 # API layer
 │   ├── mod.rs          # API module definitions
 │   └── v1/             # Version 1 endpoints
@@ -47,6 +50,7 @@ cargo test -- --nocapture  # Show println! output during tests
 │           ├── branch.rs       # Branch CRUD operations
 │           ├── employee.rs     # Employee CRUD operations
 │           ├── notification.rs # Notification settings and templates management
+│           ├── organizations.rs # Organization management endpoints
 │           ├── service.rs      # Service CRUD operations
 │           └── timetable.rs    # Timetable and schedule management
 ├── models/             # Data models and DTOs
@@ -64,19 +68,34 @@ cargo test -- --nocapture  # Show println! output during tests
 │   ├── employee/       # Employee request/response models
 │   ├── master/         # Master response models
 │   ├── notification/   # Notification request/response models
-│   ├── organization/   # Organization response models
+│   ├── notification/   # Notification request/response models
+│   ├── organization/   # Organization request/response models
 │   ├── service/        # Service request/response models
 │   └── timetable/      # Timetable request/response models
 ├── repositories/       # Data access layer with traits
 │   ├── mod.rs          # Repository module definitions
 │   ├── auth.rs         # Auth repository implementation
+│   ├── booking.rs      # Booking repository implementation
+│   ├── branch.rs       # Branch repository implementation
+│   ├── employee.rs     # Employee repository implementation
+│   ├── notification.rs # Notification repository implementation
+│   ├── organization.rs # Organization repository implementation
+│   ├── service.rs      # Service repository implementation
+│   ├── timetable.rs    # Timetable repository implementation
 │   └── token.rs        # Token whitelist repository for refresh tokens
 ├── services/           # Business logic layer
 │   ├── mod.rs          # Service module definitions
 │   ├── auth.rs         # Auth service implementation
+│   ├── booking.rs      # Booking service with scheduling algorithm
+│   ├── branch.rs       # Branch service implementation
+│   ├── employee.rs     # Employee service implementation
 │   ├── errors.rs       # Service-specific error types (using thiserror)
 │   ├── jwt.rs          # JWT utilities for token management
-│   └── providers.rs    # External service providers (SMS, Telegram)
+│   ├── notification.rs # Notification service implementation
+│   ├── organization.rs # Organization service implementation
+│   ├── providers.rs    # External service providers (SMS, Telegram)
+│   ├── service.rs      # Service entity management
+│   └── timetable.rs    # Timetable service implementation
 /migrations/            # SQLx database migrations
 /docs/                  # Documentation and specifications
 ```
@@ -95,7 +114,7 @@ cargo test -- --nocapture  # Show println! output during tests
 ### Database Schema
 - PostgreSQL with UUID primary keys for all entities
 - JSONB fields for flexible schedule data storage (`schedule_days.day_data`, `day_redefinitions.day_data`)
-- Enum types: `booking_status` (confirmed, cancelled), `notify_method` (sms, telegram)
+- Enum types: `booking_status` (confirmed, cancelled), `notify_method` (sms, telegram), `notification_status` (pending, sent, failed, cancelled)
 - Core tables: organizations, users, user_profiles, branches, employees, services, customers, bookings
 - Schedule tables: timetables, schedule_days, day_redefinitions
 - Authentication tables: phone_verify_codes, telegram_verify_hashes
@@ -113,11 +132,11 @@ cargo test -- --nocapture  # Show println! output during tests
 The booking service implements a sophisticated scheduling algorithm that:
 
 1. **Time Slot Generation**: Generates available slots in 15-minute increments based on service duration
-2. **Schedule Processing**: 
+2. **Schedule Processing**:
    - Reads master's timetable with recurrence cycles
    - Applies day-specific redefinitions for special dates
    - Supports both weekday (with working/break intervals) and weekend day types
-3. **Interval Subtraction**: 
+3. **Interval Subtraction**:
    - Subtracts break intervals from working hours
    - Subtracts existing bookings to find free slots
    - Handles complex overlapping intervals correctly
@@ -161,7 +180,7 @@ The codebase uses `yare` for parameterized testing. Key practices:
 - **HTTP Middleware**: tower 0.5 + tower-http 0.6 (CORS, tracing)
 - **HTTP Extras**: axum-extra 0.10 for cookie handling and extractors
 - **Tracing**: tracing 0.1 + tracing-subscriber 0.3 for logging
-- **Environment**: dotenv 0.15 for environment variables
+- **Environment**: dotenv 0.15 for .env file loading, envy 0.4 for structured config parsing
 - **Authentication**: jsonwebtoken 9.3 for JWT tokens
 - **Cryptography**: sha2 0.10 for hashing, hex 0.4 for encoding, hmac 0.12 for HMAC, base64 0.22 for encoding, subtle 2.6 for constant-time comparison
 - **Random**: rand 0.8 for generating secure tokens
@@ -169,7 +188,8 @@ The codebase uses `yare` for parameterized testing. Key practices:
 - **Utilities**: derive_more 2.0 for custom derives, async-trait 0.1 for async traits, bon 3.7 for builder pattern
 - **Caching**: redis 0.26 for token whitelist storage
 
-### Missing Test Dependencies (to be added)
+### Test Dependencies
+No dev-dependencies currently defined. The following should be added:
 ```toml
 [dev-dependencies]
 yare = "3.0"      # For parameterized testing
@@ -209,11 +229,13 @@ The application uses a centralized `Config` struct in `src/config.rs` to manage 
 ### Environment Variables
 - `SERVER_ADDR` - Server binding address (default: `0.0.0.0:3222`)
 - `JWT_ACCESS_SECRET` - Secret for signing access tokens (required)
-- `JWT_REFRESH_SECRET` - Secret for signing refresh tokens (required)  
-- `JWT_ACCESS_EXPIRATION_MINUTES` - Access token lifetime in minutes (default: 15)
-- `JWT_REFRESH_EXPIRATION_DAYS` - Refresh token lifetime in days (default: 7)
+- `JWT_REFRESH_SECRET` - Secret for signing refresh tokens (required)
+- `JWT_ACCESS_DURATION_MINUTES` - Access token lifetime in minutes (default: 15)
+- `JWT_REFRESH_DURATION_DAYS` - Refresh token lifetime in days (default: 7)
+- `JWT_COOKIE_ALLOW_ORIGIN` - CORS origin for cookies (default: "http://localhost:3000")
 - `DATABASE_URL` - PostgreSQL connection string (required)
-- `REDIS_URL` - Redis connection string for token whitelist (required)
+- `REDIS_URL` - Redis connection string for token whitelist (default: "redis://127.0.0.1/")
+- `TELEGRAM_HASH_SECRET` - Secret for Telegram Web App HMAC verification (required)
 
 ### Server Setup
 - **Host**: Binds to `0.0.0.0:3222` (configurable via SERVER_ADDR env var)
@@ -240,7 +262,9 @@ curl http://localhost:3222/api/v1/openapi.json  # Get OpenAPI spec
 - **Token Whitelist**: Redis-based whitelist for refresh tokens to enable secure revocation
 - **Telegram Security**: HMAC-SHA256 verification of Telegram Web App authentication data
 
-#### Implemented Auth Endpoints
+#### Implemented Endpoints
+
+**Authentication Endpoints:**
 - `POST /api/v1/auth/login/phone` - Request SMS verification code
 - `POST /api/v1/auth/verify/phone` - Verify SMS code and get tokens
 - `POST /api/v1/auth/login/telegram` - Get Telegram auth hash
@@ -251,14 +275,49 @@ curl http://localhost:3222/api/v1/openapi.json  # Get OpenAPI spec
 - `PUT /api/v1/auth/profile` - Create or update user profile
 - `GET /api/v1/auth/profile` - Get user profile
 
-#### Implemented Booking Endpoints
+**Booking Endpoints:**
 - `GET /api/v1/bookings/organizations/{organization_name}` - Get organization by name
-- `GET /api/v1/bookings/services?organizationName=X&masters[]=UUID` - Get services filtered by organization and masters
-- `GET /api/v1/bookings/masters?organizationName=X&branches[]=UUID&services[]=UUID` - Get masters filtered by organization, branches, and services
+- `GET /api/v1/bookings/services` - Get services filtered by organization and masters
+- `GET /api/v1/bookings/masters` - Get masters filtered by organization, branches, and services
 - `GET /api/v1/bookings/masters/{master_id}` - Get master by ID
-- `GET /api/v1/bookings/branches?organizationName=X&masters[]=UUID` - Get branches filtered by organization and masters
-- `GET /api/v1/bookings/windows?organizationName=X&serviceId=UUID&masters[]=UUID&branches[]=UUID&minDatetime=DT&maxDatetime=DT` - Get available time windows
+- `GET /api/v1/bookings/branches` - Get branches filtered by organization and masters
+- `GET /api/v1/bookings/windows` - Get available time windows for booking
 - `POST /api/v1/bookings/` - Create a new booking (requires authentication)
+
+**Admin Endpoints:**
+- `GET /api/v1/admin/dashboard/{organization_id}` - Get organization dashboard data
+- `GET /api/v1/admin/organizations` - List organizations
+- `POST /api/v1/admin/organizations` - Create organization
+- `GET /api/v1/admin/branches` - List branches
+- `POST /api/v1/admin/branches` - Create branch
+- `PUT /api/v1/admin/branches/{branch_id}` - Update branch
+- `DELETE /api/v1/admin/branches/{branch_id}` - Delete branch
+- `GET /api/v1/admin/employees` - List employees
+- `POST /api/v1/admin/employees` - Create employee
+- `PUT /api/v1/admin/employees/{employee_id}` - Update employee
+- `DELETE /api/v1/admin/employees/{employee_id}` - Delete employee
+- `GET /api/v1/admin/services` - List services
+- `POST /api/v1/admin/services` - Create service
+- `PUT /api/v1/admin/services/{service_id}` - Update service
+- `DELETE /api/v1/admin/services/{service_id}` - Delete service
+- `GET /api/v1/admin/timetables` - List timetables
+- `POST /api/v1/admin/timetables` - Create timetable
+- `PUT /api/v1/admin/timetables/{master_id}` - Update timetable
+- `DELETE /api/v1/admin/timetables/{master_id}` - Delete timetable
+- `POST /api/v1/admin/timetables/redefinitions` - Create schedule redefinition
+- `DELETE /api/v1/admin/timetables/redefinitions/{master_id}/{date}` - Delete schedule redefinition
+- `GET /api/v1/admin/notification-settings` - Get global notification settings
+- `PUT /api/v1/admin/notification-settings` - Update global notification settings
+- `GET /api/v1/admin/notification-templates` - List notification templates
+- `GET /api/v1/admin/branches/{branch_id}/notification-settings` - Get branch notification settings
+- `PUT /api/v1/admin/branches/{branch_id}/notification-settings` - Update branch notification settings
+- `GET /api/v1/admin/branches/{branch_id}/notification-templates` - List branch templates
+- `POST /api/v1/admin/branches/{branch_id}/notification-templates` - Create branch template
+- `PUT /api/v1/admin/branches/{branch_id}/notification-templates/{template_id}` - Update branch template
+- `DELETE /api/v1/admin/branches/{branch_id}/notification-templates/{template_id}` - Delete branch template
+- `POST /api/v1/admin/branches/{branch_id}/scheduled-notifications` - Schedule notification
+- `POST /api/v1/admin/bookings/{booking_id}/notifications` - Send booking notification
+- `POST /api/v1/admin/send-bulk-notification` - Send bulk notification
 
 ### API Design Patterns
 - **Strong Typing**: Separate request/response models for each endpoint
@@ -308,27 +367,35 @@ The project is actively being developed with the following layers implemented:
 - JWT token utilities with access/refresh token management
 - Token whitelist repository using Redis for secure token revocation
 - Service error handling with thiserror
-- Database models in separate `db.rs` modules
+- Database models in separate `db.rs` modules for all entities
 - HTTP-only cookie support for refresh tokens
-- Centralized configuration management with Config struct
+- Centralized configuration management with Config struct using envy
 - Telegram Web App authentication with HMAC-SHA256 verification
 - Request validation using axum-valid with Garde
 - User profile management (create/update/get profiles)
 - AuthUser extractor for JWT-based authentication
 - Complete auth API endpoints with OpenAPI documentation
+- Full CRUD operations for branches, employees, services, timetables
+- Organization management endpoints
+- Notification system endpoints with templates and settings
+- Booking service with sophisticated scheduling algorithm
+- Repository implementations for all core entities
+- Service implementations for all business logic
 
 **🔄 In Progress:**
-- Full CRUD operations for all entities
-- Role-based access control extractors
-- Complete test coverage
-- External service providers (SMS, Telegram)
+- Role-based access control extractors (Owner, Manager, Master roles)
+- Complete test coverage with parameterized testing
+- External service providers implementation (SMS, Telegram bots)
 
 **📋 TODO:**
 - Add missing test dependencies (yare for parameterized testing)
-- Complete repository implementations for all entities
-- Add comprehensive integration tests
-- Implement branch, employee, service, and booking repositories
-- Add role-based access control middleware
+- Add comprehensive integration tests with mocking
+- Implement role-based access control middleware for admin endpoints
+- Complete external provider implementations (SMS gateway, Telegram bot)
+- Add background job processing for notifications
+- Implement customer management endpoints
+- Add payment integration
+- Implement analytics and reporting features
 
 ### Backend Implementation Guidelines
 
@@ -376,197 +443,6 @@ The project is actively being developed with the following layers implemented:
    - Pass configuration values to components, never read environment variables directly in services/repositories
    - Components should receive configuration through constructors, not environment access
 
-## API Testing & Database Commands
-
-### API Testing with curl
-Use these commands to test the authentication and profile endpoints:
-
-#### Authentication Flow
-```bash
-# 1. Phone login (request verification code)
-curl -X POST http://localhost:3222/api/v1/auth/login/phone \
-  -H "Content-Type: application/json" \
-  -d '{"phone": "+79991234567"}'
-
-# 2. Get verification code from database
-echo "SELECT code FROM phone_verify_codes WHERE user_id IN (SELECT id FROM users WHERE phone = '+79991234567') ORDER BY created_at DESC LIMIT 1;" | pgcli $DATABASE_URL
-
-# 3. Verify phone and get access token
-curl -X POST http://localhost:3222/api/v1/auth/verify/phone \
-  -H "Content-Type: application/json" \
-  -d '{"phone": "+79991234567", "code": 123456}' \
-  -c cookies.txt
-
-# 4. Extract access token (using jq)
-ACCESS_TOKEN=$(curl -X POST http://localhost:3222/api/v1/auth/verify/phone \
-  -H "Content-Type: application/json" \
-  -d '{"phone": "+79991234567", "code": 123456}' \
-  -s | jq -r '.accessToken')
-```
-
-#### Profile Management
-```bash
-# Create/update user profile
-curl -X PUT http://localhost:3222/api/v1/auth/profile \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -d '{"firstName": "Иван", "lastName": "Иванов", "patronymic": "Иванович"}'
-
-# Get user profile
-curl -X GET http://localhost:3222/api/v1/auth/profile \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
-
-# Update profile without patronymic
-curl -X PUT http://localhost:3222/api/v1/auth/profile \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -d '{"firstName": "Петр", "lastName": "Петров"}'
-```
-
-#### Token Management
-```bash
-# Refresh access token (uses cookies)
-curl -X POST http://localhost:3222/api/v1/auth/refresh \
-  -b cookies.txt \
-  -c cookies.txt
-
-# Logout from current device
-curl -X POST http://localhost:3222/api/v1/auth/logout \
-  -b cookies.txt
-
-# Logout from all devices
-curl -X POST http://localhost:3222/api/v1/auth/logout/all \
-  -b cookies.txt
-```
-
-#### Testing Error Cases
-```bash
-# Unauthorized access
-curl -X GET http://localhost:3222/api/v1/auth/profile
-
-# Invalid token
-curl -X GET http://localhost:3222/api/v1/auth/profile \
-  -H "Authorization: Bearer invalid_token"
-
-# Validation errors
-curl -X PUT http://localhost:3222/api/v1/auth/profile \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -d '{"firstName": "", "lastName": "User"}'
-```
-
-#### Booking Flow
-```bash
-# 1. Get organization details
-curl -X GET http://localhost:3222/api/v1/bookings/organizations/testorg
-
-# 2. Get available services
-curl -X GET 'http://localhost:3222/api/v1/bookings/services?organizationName=testorg'
-
-# 3. Get available masters
-curl -X GET 'http://localhost:3222/api/v1/bookings/masters?organizationName=testorg'
-
-# 4. Get master details
-curl -X GET http://localhost:3222/api/v1/bookings/masters/550e8400-e29b-41d4-a716-446655440000
-
-# 5. Get branches
-curl -X GET 'http://localhost:3222/api/v1/bookings/branches?organizationName=testorg'
-
-# 6. Get available time windows
-curl -X GET 'http://localhost:3222/api/v1/bookings/windows?organizationName=testorg&serviceId=550e8400-e29b-41d4-a716-446655440000&minDatetime=2024-01-01T00:00:00&maxDatetime=2024-01-07T23:59:59'
-
-# 7. Create booking (requires authentication)
-curl -X POST http://localhost:3222/api/v1/bookings/ \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -d '{
-    "organizationName": "testorg",
-    "serviceId": "550e8400-e29b-41d4-a716-446655440000",
-    "masterId": "550e8400-e29b-41d4-a716-446655440001",
-    "branchId": "550e8400-e29b-41d4-a716-446655440002",
-    "start": "2024-01-01T10:00:00",
-    "end": "2024-01-01T11:00:00",
-    "notifyMethods": ["sms", "telegram"]
-  }'
-```
-
-### Database Testing with pgcli
-Connect to PostgreSQL and run queries:
-
-#### Basic Connection
-```bash
-# Connect to database
-pgcli $DATABASE_URL
-
-# Alternative with echo for single queries
-echo "SELECT * FROM users;" | pgcli $DATABASE_URL
-```
-
-#### User and Profile Queries
-```bash
-# View all users
-echo "SELECT id, phone, telegram_id, phone_verified_at, telegram_verified_at FROM users;" | pgcli $DATABASE_URL
-
-# View user profiles
-echo "SELECT up.first_name, up.last_name, up.patronymic, u.phone FROM user_profiles up JOIN users u ON up.user_id = u.id;" | pgcli $DATABASE_URL
-
-# Find user by phone
-echo "SELECT * FROM users WHERE phone = '+79991234567';" | pgcli $DATABASE_URL
-
-# View verification codes
-echo "SELECT u.phone, pvc.code, pvc.created_at, pvc.expire_at, pvc.used FROM phone_verify_codes pvc JOIN users u ON pvc.user_id = u.id ORDER BY pvc.created_at DESC;" | pgcli $DATABASE_URL
-```
-
-#### Database Schema Exploration
-```bash
-# List all tables
-echo "\dt" | pgcli $DATABASE_URL
-
-# Describe table structure
-echo "\d users" | pgcli $DATABASE_URL
-echo "\d user_profiles" | pgcli $DATABASE_URL
-
-# View table relationships
-echo "SELECT tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name WHERE tc.constraint_type = 'FOREIGN KEY';" | pgcli $DATABASE_URL
-```
-
-#### Booking and Schedule Queries
-```bash
-# View organizations
-echo "SELECT id, name, display_name FROM organizations;" | pgcli $DATABASE_URL
-
-# View services
-echo "SELECT s.id, s.display_name, s.duration_minutes, s.price, o.name as org_name FROM services s JOIN organizations o ON s.organization_id = o.id;" | pgcli $DATABASE_URL
-
-# View employees (masters)
-echo "SELECT e.id, up.first_name, up.last_name, e.is_master, o.name as org_name FROM employees e JOIN user_profiles up ON e.user_id = up.user_id JOIN organizations o ON e.organization_id = o.id WHERE e.is_master = true;" | pgcli $DATABASE_URL
-
-# View branches
-echo "SELECT b.id, b.display_name, b.timezone, o.name as org_name FROM branches b JOIN organizations o ON b.organization_id = o.id;" | pgcli $DATABASE_URL
-
-# View bookings
-echo "SELECT b.id, b.started_at, b.ended_at, b.status, s.display_name as service, up.first_name || ' ' || up.last_name as master FROM bookings b JOIN services s ON b.service_id = s.id JOIN employees e ON b.master_id = e.id JOIN user_profiles up ON e.user_id = up.user_id ORDER BY b.started_at DESC;" | pgcli $DATABASE_URL
-
-# View master schedules
-echo "SELECT t.master_id, t.recurrence_cycle_start, t.recurrence_cycle_duration_days FROM timetables t;" | pgcli $DATABASE_URL
-
-# View schedule days for a master
-echo "SELECT sd.day_ordinal, sd.day_data FROM schedule_days sd WHERE sd.master_id = 'YOUR_MASTER_ID';" | pgcli $DATABASE_URL
-```
-
-#### Data Cleanup for Testing
-```bash
-# Clear verification codes
-echo "DELETE FROM phone_verify_codes WHERE used = true OR expire_at < NOW();" | pgcli $DATABASE_URL
-
-# Clear test bookings
-echo "DELETE FROM bookings WHERE started_at < NOW() - INTERVAL '30 days';" | pgcli $DATABASE_URL
-
-# Clear test users (be careful!)
-echo "DELETE FROM user_profiles WHERE user_id IN (SELECT id FROM users WHERE phone LIKE '+7999%');" | pgcli $DATABASE_URL
-echo "DELETE FROM users WHERE phone LIKE '+7999%';" | pgcli $DATABASE_URL
-```
-
 ### Development Workflow
 ```bash
 # Start development server with auto-reload
@@ -580,20 +456,4 @@ open http://localhost:3222/docs/scalar
 
 # View OpenAPI specification
 curl http://localhost:3222/api/v1/openapi.json | jq
-```
-
-### Useful Aliases for Testing
-Add these to your shell profile (.bashrc, .zshrc):
-
-```bash
-# API testing aliases
-alias api-login='curl -X POST http://localhost:3222/api/v1/auth/login/phone -H "Content-Type: application/json"'
-alias api-verify='curl -X POST http://localhost:3222/api/v1/auth/verify/phone -H "Content-Type: application/json"'
-alias api-profile-get='curl -X GET http://localhost:3222/api/v1/auth/profile'
-alias api-profile-update='curl -X PUT http://localhost:3222/api/v1/auth/profile -H "Content-Type: application/json"'
-
-# Database aliases
-alias db-users='echo "SELECT id, phone, phone_verified_at FROM users ORDER BY created_at DESC;" | pgcli $DATABASE_URL'
-alias db-profiles='echo "SELECT up.first_name, up.last_name, up.patronymic, u.phone FROM user_profiles up JOIN users u ON up.user_id = u.id;" | pgcli $DATABASE_URL'
-alias db-codes='echo "SELECT u.phone, pvc.code, pvc.expire_at FROM phone_verify_codes pvc JOIN users u ON pvc.user_id = u.id WHERE pvc.used = false ORDER BY pvc.created_at DESC;" | pgcli $DATABASE_URL'
 ```
