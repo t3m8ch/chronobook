@@ -51,7 +51,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         (status = 403, description = "Forbidden - requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/notification"
 )]
 pub async fn get_notification_settings(
     State(state): State<AppState>,
@@ -83,7 +83,7 @@ pub async fn get_notification_settings(
         (status = 403, description = "Forbidden - requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/notification"
 )]
 pub async fn update_notification_settings(
     State(state): State<AppState>,
@@ -123,7 +123,7 @@ pub async fn update_notification_settings(
         (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/notification"
 )]
 pub async fn get_notification_templates(
     State(state): State<AppState>,
@@ -156,7 +156,7 @@ pub async fn get_notification_templates(
         (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/notification"
 )]
 pub async fn create_notification_template(
     State(state): State<AppState>,
@@ -197,7 +197,7 @@ pub async fn create_notification_template(
         (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/notification"
 )]
 pub async fn get_notification_template(
     State(state): State<AppState>,
@@ -229,7 +229,7 @@ pub async fn get_notification_template(
         (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/notification"
 )]
 pub async fn update_notification_template(
     State(state): State<AppState>,
@@ -266,7 +266,7 @@ pub async fn update_notification_template(
         (status = 403, description = "Forbidden - requires Root or Owner (organization) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/notification"
 )]
 pub async fn delete_notification_template(
     State(state): State<AppState>,
@@ -298,7 +298,7 @@ pub async fn delete_notification_template(
         (status = 403, description = "Forbidden - requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/notification"
 )]
 pub async fn send_bulk_notification(
     State(state): State<AppState>,
@@ -348,7 +348,7 @@ pub async fn send_bulk_notification(
         (status = 403, description = "Forbidden - requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/notification"
 )]
 pub async fn get_scheduled_notifications(
     State(state): State<AppState>,
@@ -381,7 +381,7 @@ pub async fn get_scheduled_notifications(
         (status = 403, description = "Forbidden - requires Root, Owner (organization), or Manager (branch) role", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/notification"
 )]
 pub async fn get_booking_notifications(
     State(state): State<AppState>,

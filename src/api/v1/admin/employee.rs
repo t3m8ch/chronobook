@@ -45,7 +45,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/employee"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn create_employee(
@@ -82,7 +82,7 @@ pub async fn create_employee(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/employee"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn list_employees(
@@ -123,7 +123,7 @@ pub async fn list_employees(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/employee"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn get_employee(
@@ -157,7 +157,7 @@ pub async fn get_employee(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/employee"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn update_employee(
@@ -191,7 +191,7 @@ pub async fn update_employee(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/employee"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn delete_employee(

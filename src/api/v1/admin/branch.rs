@@ -45,7 +45,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/branch"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn create_branch(
@@ -77,7 +77,7 @@ pub async fn create_branch(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/branch"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn list_branches(
@@ -113,7 +113,7 @@ pub async fn list_branches(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/branch"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn get_branch(
@@ -147,7 +147,7 @@ pub async fn get_branch(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/branch"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn update_branch(
@@ -181,7 +181,7 @@ pub async fn update_branch(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/branch"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn delete_branch(

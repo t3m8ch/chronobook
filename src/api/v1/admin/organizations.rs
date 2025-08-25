@@ -19,7 +19,7 @@ pub fn router() -> OpenApiRouter<AppState> {
 #[utoipa::path(
     post,
     path = "/organizations",
-    tag = "admin",
+    tag = "admin/organization",
     request_body = CreateOrganizationRequest,
     responses(
         (status = 201, description = "Organization created successfully", body = OrganizationOut),

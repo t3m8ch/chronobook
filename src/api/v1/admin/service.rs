@@ -44,7 +44,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/service"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn create_service(
@@ -86,7 +86,7 @@ pub async fn create_service(
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/service"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn list_services(
@@ -131,7 +131,7 @@ pub async fn list_services(
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/service"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn get_service(
@@ -175,7 +175,7 @@ pub async fn get_service(
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/service"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn update_service(
@@ -220,7 +220,7 @@ pub async fn update_service(
         (status = 400, description = "Bad request", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
-    tag = "admin"
+    tag = "admin/service"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn delete_service(

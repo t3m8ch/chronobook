@@ -49,7 +49,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/timetable"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn create_timetable(
@@ -80,7 +80,7 @@ pub async fn create_timetable(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/timetable"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn list_timetables(
@@ -112,7 +112,7 @@ pub async fn list_timetables(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/timetable"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn get_timetable_with_redefinitions(
@@ -150,7 +150,7 @@ pub async fn get_timetable_with_redefinitions(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/timetable"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn update_timetable(
@@ -188,7 +188,7 @@ pub async fn update_timetable(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/timetable"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn delete_timetable(
@@ -223,7 +223,7 @@ pub async fn delete_timetable(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/timetable"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn create_day_redefinition(
@@ -261,7 +261,7 @@ pub async fn create_day_redefinition(
     security(
         ("bearerAuth" = [])
     ),
-    tag = "admin"
+    tag = "admin/timetable"
 )]
 #[tracing::instrument(skip(state))]
 pub async fn delete_day_redefinition(
