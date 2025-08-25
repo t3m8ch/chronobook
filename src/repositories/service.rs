@@ -72,7 +72,7 @@ impl ServiceRepository for ServiceRepositoryImpl {
         sqlx::query!(
             r#"
             INSERT INTO services (
-                id, created_at, updated_at, display_name, description, 
+                id, created_at, updated_at, display_name, description,
                 duration_minutes, price, master_id
             )
             VALUES ($1, NOW(), NOW(), $2, $3, $4, $5, $6)
@@ -94,9 +94,9 @@ impl ServiceRepository for ServiceRepositoryImpl {
         sqlx::query_as!(
             Service,
             r#"
-            SELECT 
-                s.id, s.created_at, s.updated_at, s.display_name, s.description,
-                s.duration_minutes, s.price, s.master_id, e.organization_id
+            SELECT
+                s.id, s.display_name, s.description,
+                s.duration_minutes, s.price, e.organization_id
             FROM services s
             LEFT JOIN employees e ON s.master_id = e.id
             WHERE s.id = $1
@@ -116,9 +116,9 @@ impl ServiceRepository for ServiceRepositoryImpl {
         sqlx::query_as!(
             Service,
             r#"
-            SELECT 
-                s.id, s.created_at, s.updated_at, s.display_name, s.description,
-                s.duration_minutes, s.price, s.master_id, e.organization_id
+            SELECT
+                s.id, s.display_name, s.description,
+                s.duration_minutes, s.price, e.organization_id
             FROM services s
             LEFT JOIN employees e ON s.master_id = e.id
             WHERE e.organization_id = $1 OR s.master_id IS NULL

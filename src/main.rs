@@ -127,12 +127,6 @@ async fn main() -> anyhow::Result<()> {
         let mut telegram_provider = MockTelegramProvider::new();
         telegram_provider.expect_send_message().return_const(Ok(()));
         telegram_provider
-            .expect_generate_auth_hash()
-            .return_const(Ok(Vec::new()));
-        telegram_provider
-            .expect_verify_auth_data()
-            .return_const(Ok(true));
-        telegram_provider
     });
 
     let redis_token_repository: Arc<dyn TokenRepository> = Arc::new(

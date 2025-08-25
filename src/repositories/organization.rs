@@ -14,11 +14,6 @@ pub trait OrganizationRepository: Send + Sync {
         description: Option<&str>,
     ) -> Result<Organization, sqlx::Error>;
 
-    async fn get_organization_by_name(
-        &self,
-        name: &str,
-    ) -> Result<Option<Organization>, sqlx::Error>;
-
     async fn organization_exists_by_name(&self, name: &str) -> Result<bool, sqlx::Error>;
 }
 
@@ -53,24 +48,6 @@ impl OrganizationRepository for OrganizationRepositoryImpl {
         .bind(display_name)
         .bind(description)
         .fetch_one(&mut **tx)
-        .await?;
-
-        Ok(organization)
-    }
-
-    async fn get_organization_by_name(
-        &self,
-        name: &str,
-    ) -> Result<Option<Organization>, sqlx::Error> {
-        let organization = sqlx::query_as::<_, Organization>(
-            r#"
-            SELECT id, name, display_name, description
-            FROM organizations
-            WHERE name = $1
-            "#,
-        )
-        .bind(name)
-        .fetch_optional(&self.pool)
         .await?;
 
         Ok(organization)

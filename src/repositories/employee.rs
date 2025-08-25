@@ -49,8 +49,6 @@ pub trait EmployeeRepository: Send + Sync {
     ) -> Result<Option<EmployeeWithProfile>>;
 
     async fn delete(&self, id: Uuid) -> Result<bool>;
-
-    async fn get_organization_id(&self, employee_id: Uuid) -> Result<Option<Uuid>>;
 }
 
 pub struct PgEmployeeRepository {
@@ -88,8 +86,8 @@ impl EmployeeRepository for PgEmployeeRepository {
                 is_owner, is_manager, is_master, organization_id, manager_branch_id, user_id
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-            RETURNING id, created_at, updated_at, contact_phone, contact_email, contact_telegram,
-                      is_owner, is_manager, is_master, organization_id, manager_branch_id, user_id
+            RETURNING id, contact_phone, contact_email, contact_telegram,
+                      is_owner, is_manager, manager_branch_id
             "#,
             id,
             now,
@@ -117,10 +115,8 @@ impl EmployeeRepository for PgEmployeeRepository {
         sqlx::query_as!(
             EmployeeWithProfile,
             r#"
-            SELECT 
+            SELECT
                 e.id,
-                e.created_at as employee_created_at,
-                e.updated_at as employee_updated_at,
                 e.contact_phone,
                 e.contact_email,
                 e.contact_telegram,
@@ -132,9 +128,7 @@ impl EmployeeRepository for PgEmployeeRepository {
                 e.user_id,
                 up.first_name,
                 up.last_name,
-                up.patronymic,
-                up.created_at as profile_created_at,
-                up.updated_at as profile_updated_at
+                up.patronymic
             FROM employees e
             INNER JOIN user_profiles up ON e.user_id = up.user_id
             WHERE e.organization_id = $1
@@ -153,10 +147,8 @@ impl EmployeeRepository for PgEmployeeRepository {
         sqlx::query_as!(
             EmployeeWithProfile,
             r#"
-            SELECT 
+            SELECT
                 e.id,
-                e.created_at as employee_created_at,
-                e.updated_at as employee_updated_at,
                 e.contact_phone,
                 e.contact_email,
                 e.contact_telegram,
@@ -168,9 +160,7 @@ impl EmployeeRepository for PgEmployeeRepository {
                 e.user_id,
                 up.first_name,
                 up.last_name,
-                up.patronymic,
-                up.created_at as profile_created_at,
-                up.updated_at as profile_updated_at
+                up.patronymic
             FROM employees e
             INNER JOIN user_profiles up ON e.user_id = up.user_id
             WHERE e.id = $1
@@ -189,8 +179,8 @@ impl EmployeeRepository for PgEmployeeRepository {
         sqlx::query_as!(
             Employee,
             r#"
-            SELECT id, created_at, updated_at, contact_phone, contact_email, contact_telegram,
-                   is_owner, is_manager, is_master, organization_id, manager_branch_id, user_id
+            SELECT id, contact_phone, contact_email, contact_telegram,
+                   is_owner, is_manager, manager_branch_id
             FROM employees
             WHERE user_id = $1 AND organization_id = $2
             "#,
@@ -219,8 +209,8 @@ impl EmployeeRepository for PgEmployeeRepository {
         let current = sqlx::query_as!(
             Employee,
             r#"
-            SELECT id, created_at, updated_at, contact_phone, contact_email, contact_telegram,
-                   is_owner, is_manager, is_master, organization_id, manager_branch_id, user_id
+            SELECT id, contact_phone, contact_email, contact_telegram,
+                   is_owner, is_manager, manager_branch_id
             FROM employees
             WHERE id = $1
             "#,
@@ -304,20 +294,5 @@ impl EmployeeRepository for PgEmployeeRepository {
         .await?;
 
         Ok(result.rows_affected() > 0)
-    }
-
-    async fn get_organization_id(&self, employee_id: Uuid) -> Result<Option<Uuid>> {
-        let result = sqlx::query!(
-            r#"
-            SELECT organization_id
-            FROM employees
-            WHERE id = $1
-            "#,
-            employee_id
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-
-        Ok(result.map(|r| r.organization_id))
     }
 }

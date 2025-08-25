@@ -464,15 +464,10 @@ mod tests {
         )
     }
 
-    fn create_test_user(phone: Option<String>, telegram_id: Option<i64>) -> User {
+    fn create_test_user() -> User {
         User {
             id: Uuid::now_v7(),
-            created_at: Utc::now().naive_utc(),
-            updated_at: Utc::now().naive_utc(),
-            phone,
-            telegram_id,
             phone_verified_at: None,
-            telegram_verified_at: None,
         }
     }
 
@@ -493,21 +488,12 @@ mod tests {
         mock_repo
             .expect_create_user()
             .times(1)
-            .returning(move |p, _| Ok(create_test_user(p, None)));
+            .returning(move |_, _| Ok(create_test_user()));
 
         mock_repo
             .expect_create_phone_verify_code()
             .times(1)
-            .returning(move |user_id, code| {
-                Ok(PhoneVerifyCode {
-                    id: Uuid::now_v7(),
-                    created_at: Utc::now().naive_utc(),
-                    code,
-                    expire_at: (Utc::now() + chrono::Duration::minutes(5)).naive_utc(),
-                    used: false,
-                    user_id,
-                })
-            });
+            .returning(move |_, _| Ok(PhoneVerifyCode { id: Uuid::now_v7() }));
 
         mock_sms
             .expect_send_verification_code()
@@ -558,26 +544,12 @@ mod tests {
             .expect_find_user_by_phone()
             .with(mockall::predicate::eq(phone.clone()))
             .times(1)
-            .returning(|_| {
-                Ok(Some(create_test_user(
-                    Some("+1234567890".to_string()),
-                    None,
-                )))
-            });
+            .returning(|_| Ok(Some(create_test_user())));
 
         mock_repo
             .expect_create_phone_verify_code()
             .times(1)
-            .returning(move |user_id, code| {
-                Ok(PhoneVerifyCode {
-                    id: Uuid::now_v7(),
-                    created_at: Utc::now().naive_utc(),
-                    code,
-                    expire_at: (Utc::now() + chrono::Duration::minutes(5)).naive_utc(),
-                    used: false,
-                    user_id,
-                })
-            });
+            .returning(move |_, _| Ok(PhoneVerifyCode { id: Uuid::now_v7() }));
 
         mock_sms
             .expect_send_verification_code()
@@ -597,7 +569,7 @@ mod tests {
     #[tokio::test]
     async fn test_verify_phone_success() {
         let phone = "+1234567890".to_string();
-        let user = create_test_user(Some(phone.clone()), None);
+        let user = create_test_user();
         let user_id = user.id;
         let code = 123456;
 
@@ -617,28 +589,18 @@ mod tests {
                 mockall::predicate::eq(code as i32),
             )
             .times(1)
-            .returning(move |uid, c| {
-                Ok(Some(PhoneVerifyCode {
-                    id: Uuid::now_v7(),
-                    created_at: Utc::now().naive_utc(),
-                    code: c,
-                    expire_at: (Utc::now() + chrono::Duration::minutes(5)).naive_utc(),
-                    used: false,
-                    user_id: uid,
-                }))
-            });
+            .returning(move |_, _| Ok(Some(PhoneVerifyCode { id: Uuid::now_v7() })));
 
         mock_repo
             .expect_mark_phone_verify_code_used()
             .times(1)
             .returning(|_| Ok(()));
 
-        let phone_clone = phone.clone();
         mock_repo
             .expect_update_user_phone_verified()
             .times(1)
             .returning(move |uid| {
-                let mut verified_user = create_test_user(Some(phone_clone.clone()), None);
+                let mut verified_user = create_test_user();
                 verified_user.id = uid;
                 verified_user.phone_verified_at = Some(Utc::now().naive_utc());
                 Ok(verified_user)
@@ -665,7 +627,7 @@ mod tests {
     #[tokio::test]
     async fn test_verify_phone_invalid_code() {
         let phone = "+1234567890".to_string();
-        let user = create_test_user(Some(phone.clone()), None);
+        let user = create_test_user();
 
         let mut mock_repo = MockAuthRepository::new();
 
@@ -701,7 +663,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_refresh_token_success() {
-        let user = create_test_user(Some("+1234567890".to_string()), None);
+        let user = create_test_user();
         let org_id = Uuid::now_v7();
 
         // Generate a valid refresh token

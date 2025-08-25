@@ -69,14 +69,6 @@ pub trait NotificationRepository: Send + Sync {
         &self,
         booking_id: Uuid,
     ) -> Result<Vec<ScheduledNotification>, sqlx::Error>;
-    async fn create_scheduled_notification(
-        &self,
-        booking_id: Uuid,
-        method: &str,
-        template_id: Uuid,
-        scheduled_at: DateTime<Utc>,
-        actual_send_at: DateTime<Utc>,
-    ) -> Result<ScheduledNotification, sqlx::Error>;
     async fn get_customers_for_bulk_notification(
         &self,
         branch_id: Uuid,
@@ -119,8 +111,8 @@ impl NotificationRepository for PostgresNotificationRepository {
     ) -> Result<NotificationSettings, sqlx::Error> {
         let now = Utc::now();
         let settings = sqlx::query_as::<_, NotificationSettings>(
-            "INSERT INTO notification_settings (branch_id, created_at, updated_at, quiet_hours_start, quiet_hours_end, smart_boundary_hours, critical_threshold_hours) 
-            VALUES ($1, $2, $3, '22:00:00', '08:00:00', 12, 3) 
+            "INSERT INTO notification_settings (branch_id, created_at, updated_at, quiet_hours_start, quiet_hours_end, smart_boundary_hours, critical_threshold_hours)
+            VALUES ($1, $2, $3, '22:00:00', '08:00:00', 12, 3)
             RETURNING branch_id, created_at, updated_at, quiet_hours_start, quiet_hours_end, smart_boundary_hours, critical_threshold_hours"
         )
         .bind(branch_id)
@@ -142,7 +134,7 @@ impl NotificationRepository for PostgresNotificationRepository {
     ) -> Result<NotificationSettings, sqlx::Error> {
         let now = Utc::now();
         let settings = sqlx::query_as::<_, NotificationSettings>(
-            "UPDATE notification_settings 
+            "UPDATE notification_settings
             SET updated_at = $2,
                 quiet_hours_start = COALESCE($3, quiet_hours_start),
                 quiet_hours_end = COALESCE($4, quiet_hours_end),
@@ -204,7 +196,7 @@ impl NotificationRepository for PostgresNotificationRepository {
         let id = Uuid::new_v4();
 
         let template = sqlx::query_as::<_, NotificationTemplate>(
-            "INSERT INTO notification_templates (id, created_at, updated_at, branch_id, template_type, method, body) 
+            "INSERT INTO notification_templates (id, created_at, updated_at, branch_id, template_type, method, body)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id, created_at, updated_at, branch_id, template_type, method, body"
         )
@@ -231,7 +223,7 @@ impl NotificationRepository for PostgresNotificationRepository {
         let now = Utc::now();
 
         let template = sqlx::query_as::<_, NotificationTemplate>(
-            "UPDATE notification_templates 
+            "UPDATE notification_templates
             SET updated_at = $2,
                 template_type = COALESCE($3, template_type),
                 method = COALESCE($4, method),
@@ -282,7 +274,7 @@ impl NotificationRepository for PostgresNotificationRepository {
         branch_id: Uuid,
     ) -> Result<Vec<ScheduledNotification>, sqlx::Error> {
         let notifications = sqlx::query_as::<_, ScheduledNotification>(
-            "SELECT sn.id, sn.created_at, sn.updated_at, sn.booking_id, sn.method, sn.template_id, 
+            "SELECT sn.id, sn.created_at, sn.updated_at, sn.booking_id, sn.method, sn.template_id,
             sn.scheduled_at, sn.actual_send_at, sn.sent_at, sn.status, sn.error_message
             FROM scheduled_notifications sn
             JOIN bookings b ON sn.booking_id = b.id
@@ -301,9 +293,9 @@ impl NotificationRepository for PostgresNotificationRepository {
         booking_id: Uuid,
     ) -> Result<Vec<ScheduledNotification>, sqlx::Error> {
         let notifications = sqlx::query_as::<_, ScheduledNotification>(
-            "SELECT id, created_at, updated_at, booking_id, method, template_id, 
+            "SELECT id, created_at, updated_at, booking_id, method, template_id,
             scheduled_at, actual_send_at, sent_at, status, error_message
-            FROM scheduled_notifications 
+            FROM scheduled_notifications
             WHERE booking_id = $1
             ORDER BY scheduled_at DESC",
         )
@@ -312,36 +304,6 @@ impl NotificationRepository for PostgresNotificationRepository {
         .await?;
 
         Ok(notifications)
-    }
-
-    async fn create_scheduled_notification(
-        &self,
-        booking_id: Uuid,
-        method: &str,
-        template_id: Uuid,
-        scheduled_at: DateTime<Utc>,
-        actual_send_at: DateTime<Utc>,
-    ) -> Result<ScheduledNotification, sqlx::Error> {
-        let now = Utc::now();
-        let id = Uuid::new_v4();
-
-        let notification = sqlx::query_as::<_, ScheduledNotification>(
-            "INSERT INTO scheduled_notifications (id, created_at, updated_at, booking_id, method, template_id, scheduled_at, actual_send_at, status) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
-            RETURNING id, created_at, updated_at, booking_id, method, template_id, scheduled_at, actual_send_at, sent_at, status, error_message"
-        )
-        .bind(id)
-        .bind(now)
-        .bind(now)
-        .bind(booking_id)
-        .bind(method)
-        .bind(template_id)
-        .bind(scheduled_at)
-        .bind(actual_send_at)
-        .fetch_one(&self.pool)
-        .await?;
-
-        Ok(notification)
     }
 
     async fn get_customers_for_bulk_notification(
@@ -355,7 +317,7 @@ impl NotificationRepository for PostgresNotificationRepository {
         let customers = match strategy {
             "AllCustomers" => {
                 sqlx::query_as::<_, (Uuid, Option<String>, Option<i64>)>(
-                    "SELECT c.id, u.phone, u.telegram_id 
+                    "SELECT c.id, u.phone, u.telegram_id
                     FROM customers c
                     JOIN users u ON c.user_id = u.id
                     JOIN organizations o ON c.organization_id = o.id
@@ -368,12 +330,12 @@ impl NotificationRepository for PostgresNotificationRepository {
             }
             "RecentBookings" => {
                 sqlx::query_as::<_, (Uuid, Option<String>, Option<i64>)>(
-                    "SELECT DISTINCT c.id, u.phone, u.telegram_id 
+                    "SELECT DISTINCT c.id, u.phone, u.telegram_id
                     FROM customers c
                     JOIN users u ON c.user_id = u.id
                     JOIN bookings bk ON c.id = bk.customer_id
-                    WHERE bk.branch_id = $1 
-                    AND bk.started_at >= $2 
+                    WHERE bk.branch_id = $1
+                    AND bk.started_at >= $2
                     AND bk.started_at <= $3",
                 )
                 .bind(branch_id)
@@ -387,7 +349,7 @@ impl NotificationRepository for PostgresNotificationRepository {
                     return Ok(vec![]);
                 }
                 let query = format!(
-                    "SELECT c.id, u.phone, u.telegram_id 
+                    "SELECT c.id, u.phone, u.telegram_id
                     FROM customers c
                     JOIN users u ON c.user_id = u.id
                     WHERE c.id = ANY($1::uuid[])"

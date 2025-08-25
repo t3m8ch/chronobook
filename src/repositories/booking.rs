@@ -88,7 +88,7 @@ impl BookingRepository for PgBookingRepository {
         sqlx::query_as!(
             Organization,
             r#"
-            SELECT id, created_at, updated_at, name, display_name, description
+            SELECT id, name, display_name, description
             FROM organizations
             WHERE name = $1
             "#,
@@ -108,8 +108,8 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 Service,
                 r#"
-                SELECT s.id, s.created_at, s.updated_at, s.display_name, 
-                       s.description, s.duration_minutes, s.price, s.master_id, e.organization_id
+                SELECT s.id, s.display_name,
+                       s.description, s.duration_minutes, s.price, e.organization_id
                 FROM services s
                 LEFT JOIN employees e ON s.master_id = e.id
                 LEFT JOIN organizations o ON e.organization_id = o.id
@@ -125,8 +125,8 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 Service,
                 r#"
-                SELECT DISTINCT s.id, s.created_at, s.updated_at, s.display_name, 
-                       s.description, s.duration_minutes, s.price, s.master_id, e.organization_id
+                SELECT DISTINCT s.id, s.display_name,
+                       s.description, s.duration_minutes, s.price, e.organization_id
                 FROM services s
                 LEFT JOIN employees e ON s.master_id = e.id
                 WHERE s.master_id = ANY($1) OR s.master_id IS NULL
@@ -149,12 +149,11 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 EmployeeWithProfile,
                 r#"
-                SELECT e.id, e.created_at as employee_created_at, e.updated_at as employee_updated_at,
+                SELECT e.id,
                        e.contact_phone, e.contact_email, e.contact_telegram,
                        e.is_owner, e.is_manager, e.is_master,
                        e.organization_id, e.manager_branch_id, e.user_id,
-                       up.first_name, up.last_name, up.patronymic,
-                       up.created_at as profile_created_at, up.updated_at as profile_updated_at
+                       up.first_name, up.last_name, up.patronymic
                 FROM employees e
                 INNER JOIN organizations o ON e.organization_id = o.id
                 INNER JOIN user_profiles up ON e.user_id = up.user_id
@@ -168,19 +167,18 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 EmployeeWithProfile,
                 r#"
-                SELECT DISTINCT e.id, e.created_at as employee_created_at, e.updated_at as employee_updated_at,
+                SELECT DISTINCT e.id,
                        e.contact_phone, e.contact_email, e.contact_telegram,
                        e.is_owner, e.is_manager, e.is_master,
                        e.organization_id, e.manager_branch_id, e.user_id,
-                       up.first_name, up.last_name, up.patronymic,
-                       up.created_at as profile_created_at, up.updated_at as profile_updated_at
+                       up.first_name, up.last_name, up.patronymic
                 FROM employees e
                 INNER JOIN organizations o ON e.organization_id = o.id
                 INNER JOIN user_profiles up ON e.user_id = up.user_id
                 WHERE o.name = $1 AND e.is_master = true
                 AND EXISTS (
                     SELECT 1 FROM schedule_days sd
-                    WHERE sd.master_id = e.id 
+                    WHERE sd.master_id = e.id
                     AND (sd.day_data->>'branch_id')::uuid = ANY($2)
                 )
                 "#,
@@ -193,12 +191,11 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 EmployeeWithProfile,
                 r#"
-                SELECT DISTINCT e.id, e.created_at as employee_created_at, e.updated_at as employee_updated_at,
+                SELECT DISTINCT e.id,
                        e.contact_phone, e.contact_email, e.contact_telegram,
                        e.is_owner, e.is_manager, e.is_master,
                        e.organization_id, e.manager_branch_id, e.user_id,
-                       up.first_name, up.last_name, up.patronymic,
-                       up.created_at as profile_created_at, up.updated_at as profile_updated_at
+                       up.first_name, up.last_name, up.patronymic
                 FROM employees e
                 INNER JOIN organizations o ON e.organization_id = o.id
                 INNER JOIN user_profiles up ON e.user_id = up.user_id
@@ -218,19 +215,18 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 EmployeeWithProfile,
                 r#"
-                SELECT DISTINCT e.id, e.created_at as employee_created_at, e.updated_at as employee_updated_at,
+                SELECT DISTINCT e.id,
                        e.contact_phone, e.contact_email, e.contact_telegram,
                        e.is_owner, e.is_manager, e.is_master,
                        e.organization_id, e.manager_branch_id, e.user_id,
-                       up.first_name, up.last_name, up.patronymic,
-                       up.created_at as profile_created_at, up.updated_at as profile_updated_at
+                       up.first_name, up.last_name, up.patronymic
                 FROM employees e
                 INNER JOIN organizations o ON e.organization_id = o.id
                 INNER JOIN user_profiles up ON e.user_id = up.user_id
                 WHERE o.name = $1 AND e.is_master = true
                 AND EXISTS (
                     SELECT 1 FROM schedule_days sd
-                    WHERE sd.master_id = e.id 
+                    WHERE sd.master_id = e.id
                     AND (sd.day_data->>'branch_id')::uuid = ANY($2)
                 )
                 AND EXISTS (
@@ -252,12 +248,11 @@ impl BookingRepository for PgBookingRepository {
         sqlx::query_as!(
             EmployeeWithProfile,
             r#"
-            SELECT e.id, e.created_at as employee_created_at, e.updated_at as employee_updated_at,
+            SELECT e.id,
                    e.contact_phone, e.contact_email, e.contact_telegram,
                    e.is_owner, e.is_manager, e.is_master,
                    e.organization_id, e.manager_branch_id, e.user_id,
-                   up.first_name, up.last_name, up.patronymic,
-                   up.created_at as profile_created_at, up.updated_at as profile_updated_at
+                   up.first_name, up.last_name, up.patronymic
             FROM employees e
             INNER JOIN user_profiles up ON e.user_id = up.user_id
             WHERE e.id = $1 AND e.is_master = true
@@ -278,7 +273,7 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 Branch,
                 r#"
-                SELECT b.id, b.created_at, b.updated_at, b.display_name, b.description,
+                SELECT b.id, b.display_name, b.description,
                        b.timezone, b.street, b.house_number, b.apartment_number,
                        b.city, b.region, b.country, b.address_info, b.organization_id
                 FROM branches b
@@ -294,7 +289,7 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 Branch,
                 r#"
-                SELECT DISTINCT b.id, b.created_at, b.updated_at, b.display_name, b.description,
+                SELECT DISTINCT b.id, b.display_name, b.description,
                        b.timezone, b.street, b.house_number, b.apartment_number,
                        b.city, b.region, b.country, b.address_info, b.organization_id
                 FROM branches b
@@ -332,7 +327,7 @@ impl BookingRepository for PgBookingRepository {
         sqlx::query_as!(
             ScheduleDay,
             r#"
-            SELECT master_id, created_at, updated_at, day_ordinal, day_data
+            SELECT master_id, day_ordinal, day_data
             FROM schedule_days
             WHERE master_id = $1
             ORDER BY day_ordinal
@@ -352,7 +347,7 @@ impl BookingRepository for PgBookingRepository {
         sqlx::query_as!(
             DayRedefinition,
             r#"
-            SELECT master_id, created_at, updated_at, date, day_data
+            SELECT master_id, date, day_data
             FROM day_redefinitions
             WHERE master_id = $1 AND date >= $2::date AND date <= $3::date
             ORDER BY date
@@ -378,9 +373,8 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 Booking,
                 r#"
-                SELECT b.id, b.created_at, b.updated_at, b.customer_id, b.service_id,
-                       b.master_id, b.branch_id, b.started_at, b.ended_at,
-                       b.notify_methods as "notify_methods: Vec<String>"
+                SELECT b.id, b.service_id,
+                       b.master_id, b.branch_id, b.started_at, b.ended_at
                 FROM bookings b
                 INNER JOIN employees e ON b.master_id = e.id
                 WHERE e.organization_id = $1
@@ -398,9 +392,8 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 Booking,
                 r#"
-                SELECT id, created_at, updated_at, customer_id, service_id,
-                       master_id, branch_id, started_at, ended_at,
-                       notify_methods as "notify_methods: Vec<String>"
+                SELECT id, service_id,
+                       master_id, branch_id, started_at, ended_at
                 FROM bookings
                 WHERE master_id = ANY($1)
                 AND ended_at > $2
@@ -417,9 +410,8 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 Booking,
                 r#"
-                SELECT id, created_at, updated_at, customer_id, service_id,
-                       master_id, branch_id, started_at, ended_at,
-                       notify_methods as "notify_methods: Vec<String>"
+                SELECT id, service_id,
+                       master_id, branch_id, started_at, ended_at
                 FROM bookings
                 WHERE branch_id = ANY($1)
                 AND ended_at > $2
@@ -436,9 +428,8 @@ impl BookingRepository for PgBookingRepository {
             sqlx::query_as!(
                 Booking,
                 r#"
-                SELECT id, created_at, updated_at, customer_id, service_id,
-                       master_id, branch_id, started_at, ended_at,
-                       notify_methods as "notify_methods: Vec<String>"
+                SELECT id, service_id,
+                       master_id, branch_id, started_at, ended_at
                 FROM bookings
                 WHERE master_id = ANY($1)
                 AND branch_id = ANY($2)
@@ -459,8 +450,8 @@ impl BookingRepository for PgBookingRepository {
         sqlx::query_as!(
             Service,
             r#"
-            SELECT s.id, s.created_at, s.updated_at, s.display_name, s.description,
-                   s.duration_minutes, s.price, s.master_id, e.organization_id
+            SELECT s.id, s.display_name, s.description,
+                   s.duration_minutes, s.price, e.organization_id
             FROM services s
             LEFT JOIN employees e ON s.master_id = e.id
             WHERE s.id = $1
@@ -490,9 +481,8 @@ impl BookingRepository for PgBookingRepository {
             INSERT INTO bookings (id, created_at, updated_at, customer_id, service_id,
                                  master_id, branch_id, started_at, ended_at, notify_methods)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::text[]::notify_method[])
-            RETURNING id, created_at, updated_at, customer_id, service_id,
-                      master_id, branch_id, started_at, ended_at,
-                      notify_methods as "notify_methods: Vec<String>"
+            RETURNING id, service_id,
+                      master_id, branch_id, started_at, ended_at
             "#,
             id,
             now,

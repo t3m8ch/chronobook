@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::NaiveDate;
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::models::timetable::{
@@ -139,7 +139,7 @@ impl TimetableRepository for TimetableRepositoryImpl {
         let schedule_days = sqlx::query_as!(
             ScheduleDay,
             r#"
-            SELECT master_id, created_at, updated_at, day_ordinal, day_data
+            SELECT master_id, day_ordinal, day_data
             FROM schedule_days
             WHERE master_id = $1
             ORDER BY day_ordinal
@@ -157,7 +157,7 @@ impl TimetableRepository for TimetableRepositoryImpl {
         let redefinitions = sqlx::query_as!(
             DayRedefinition,
             r#"
-            SELECT master_id, created_at, updated_at, date, day_data
+            SELECT master_id, date, day_data
             FROM day_redefinitions
             WHERE master_id = $1
             ORDER BY date DESC

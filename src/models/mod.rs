@@ -9,4 +9,3 @@ pub mod notification;
 pub mod organization;
 pub mod service;
 pub mod timetable;
-pub mod validation;

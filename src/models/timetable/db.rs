@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::NaiveDate;
 use serde_json::Value;
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -12,8 +12,6 @@ pub struct Timetable {
 #[derive(Debug, Clone, FromRow)]
 pub struct ScheduleDay {
     pub master_id: Uuid,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
     pub day_ordinal: i32,
     pub day_data: Value,
 }
@@ -21,8 +19,6 @@ pub struct ScheduleDay {
 #[derive(Debug, Clone, FromRow)]
 pub struct DayRedefinition {
     pub master_id: Uuid,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
     pub date: NaiveDate,
     pub day_data: Value,
 }

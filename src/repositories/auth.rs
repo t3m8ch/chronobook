@@ -4,7 +4,7 @@ use sqlx::{PgPool, Result};
 use uuid::Uuid;
 
 use crate::models::{
-    auth::db::{Customer, Organization, PhoneVerifyCode, TelegramVerifyHash, User, UserProfile},
+    auth::db::{Customer, PhoneVerifyCode, TelegramVerifyHash, User, UserProfile},
     employee::db::Employee,
 };
 
@@ -51,7 +51,6 @@ pub trait AuthRepository: Send + Sync {
         code: i32,
     ) -> Result<Option<PhoneVerifyCode>>;
     async fn mark_phone_verify_code_used(&self, id: Uuid) -> Result<()>;
-    async fn delete_expired_phone_codes(&self) -> Result<u64>;
 
     async fn create_telegram_verify_hash(
         &self,
@@ -61,7 +60,6 @@ pub trait AuthRepository: Send + Sync {
     async fn find_valid_telegram_hash(&self, hash: &[u8]) -> Result<Option<TelegramVerifyHash>>;
     async fn update_telegram_hash_user(&self, hash_id: Uuid, user_id: Uuid) -> Result<()>;
     async fn mark_telegram_hash_used(&self, id: Uuid) -> Result<()>;
-    async fn delete_expired_telegram_hashes(&self) -> Result<u64>;
 }
 
 pub struct PgAuthRepository {
@@ -80,8 +78,7 @@ impl AuthRepository for PgAuthRepository {
         sqlx::query_as!(
             User,
             r#"
-            SELECT id, created_at, updated_at, phone, telegram_id,
-                   phone_verified_at, telegram_verified_at
+            SELECT id, phone_verified_at
             FROM users
             WHERE phone = $1
             "#,
@@ -95,8 +92,7 @@ impl AuthRepository for PgAuthRepository {
         sqlx::query_as!(
             User,
             r#"
-            SELECT id, created_at, updated_at, phone, telegram_id,
-                   phone_verified_at, telegram_verified_at
+            SELECT id, phone_verified_at
             FROM users
             WHERE telegram_id = $1
             "#,
@@ -110,8 +106,7 @@ impl AuthRepository for PgAuthRepository {
         sqlx::query_as!(
             User,
             r#"
-            SELECT id, created_at, updated_at, phone, telegram_id,
-                   phone_verified_at, telegram_verified_at
+            SELECT id, phone_verified_at
             FROM users
             WHERE id = $1
             "#,
@@ -130,8 +125,7 @@ impl AuthRepository for PgAuthRepository {
             r#"
             INSERT INTO users (id, created_at, updated_at, phone, telegram_id)
             VALUES ($1, $2, $3, $4, $5)
-            RETURNING id, created_at, updated_at, phone, telegram_id,
-                      phone_verified_at, telegram_verified_at
+            RETURNING id, phone_verified_at
             "#,
             id,
             now.naive_utc(),
@@ -152,8 +146,7 @@ impl AuthRepository for PgAuthRepository {
             UPDATE users
             SET phone_verified_at = $1, updated_at = $2
             WHERE id = $3
-            RETURNING id, created_at, updated_at, phone, telegram_id,
-                      phone_verified_at, telegram_verified_at
+            RETURNING id, phone_verified_at
             "#,
             now.naive_utc(),
             now.naive_utc(),
@@ -172,8 +165,7 @@ impl AuthRepository for PgAuthRepository {
             UPDATE users
             SET telegram_verified_at = $1, updated_at = $2
             WHERE id = $3
-            RETURNING id, created_at, updated_at, phone, telegram_id,
-                      phone_verified_at, telegram_verified_at
+            RETURNING id, phone_verified_at
             "#,
             now.naive_utc(),
             now.naive_utc(),
@@ -187,7 +179,7 @@ impl AuthRepository for PgAuthRepository {
         sqlx::query_as!(
             UserProfile,
             r#"
-            SELECT user_id, created_at, updated_at, first_name, last_name, patronymic
+            SELECT first_name, last_name, patronymic
             FROM user_profiles
             WHERE user_id = $1
             "#,
@@ -211,7 +203,7 @@ impl AuthRepository for PgAuthRepository {
             r#"
             INSERT INTO user_profiles (user_id, created_at, updated_at, first_name, last_name, patronymic)
             VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING user_id, created_at, updated_at, first_name, last_name, patronymic
+            RETURNING first_name, last_name, patronymic
             "#,
             user_id,
             now.naive_utc(),
@@ -239,7 +231,7 @@ impl AuthRepository for PgAuthRepository {
             UPDATE user_profiles
             SET first_name = $1, last_name = $2, patronymic = $3, updated_at = $4
             WHERE user_id = $5
-            RETURNING user_id, created_at, updated_at, first_name, last_name, patronymic
+            RETURNING first_name, last_name, patronymic
             "#,
             first_name,
             last_name,
@@ -259,7 +251,7 @@ impl AuthRepository for PgAuthRepository {
         sqlx::query_as!(
             Customer,
             r#"
-            SELECT id, created_at, updated_at, organization_id, user_id
+            SELECT id
             FROM customers
             WHERE user_id = $1 AND organization_id = $2
             "#,
@@ -279,7 +271,7 @@ impl AuthRepository for PgAuthRepository {
             r#"
             INSERT INTO customers (id, created_at, updated_at, organization_id, user_id)
             VALUES ($1, $2, $3, $4, $5)
-            RETURNING id, created_at, updated_at, organization_id, user_id
+            RETURNING id
             "#,
             id,
             now.naive_utc(),
@@ -299,8 +291,8 @@ impl AuthRepository for PgAuthRepository {
         sqlx::query_as!(
             Employee,
             r#"
-            SELECT id, created_at, updated_at, contact_phone, contact_email, contact_telegram,
-                   is_owner, is_manager, is_master, organization_id, manager_branch_id, user_id
+            SELECT id, contact_phone, contact_email, contact_telegram,
+                   is_owner, is_manager, manager_branch_id
             FROM employees
             WHERE user_id = $1 AND organization_id = $2
             "#,
@@ -321,7 +313,7 @@ impl AuthRepository for PgAuthRepository {
             r#"
             INSERT INTO phone_verify_codes (id, created_at, code, expire_at, used, user_id)
             VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id, created_at, code, expire_at, used, user_id
+            RETURNING id
             "#,
             id,
             now.naive_utc(),
@@ -344,7 +336,7 @@ impl AuthRepository for PgAuthRepository {
         sqlx::query_as!(
             PhoneVerifyCode,
             r#"
-            SELECT id, created_at, code, expire_at, used, user_id
+            SELECT id
             FROM phone_verify_codes
             WHERE user_id = $1 AND code = $2 AND used = false AND expire_at > $3
             ORDER BY created_at DESC
@@ -372,22 +364,6 @@ impl AuthRepository for PgAuthRepository {
         Ok(())
     }
 
-    async fn delete_expired_phone_codes(&self) -> Result<u64> {
-        let now = Utc::now();
-
-        let result = sqlx::query!(
-            r#"
-            DELETE FROM phone_verify_codes
-            WHERE expire_at < $1 OR used = true
-            "#,
-            now.naive_utc()
-        )
-        .execute(&self.pool)
-        .await?;
-
-        Ok(result.rows_affected())
-    }
-
     async fn create_telegram_verify_hash(
         &self,
         user_id: Option<Uuid>,
@@ -402,7 +378,7 @@ impl AuthRepository for PgAuthRepository {
             r#"
             INSERT INTO telegram_verify_hashes (id, created_at, hash, expire_at, used, user_id)
             VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id, created_at, hash, expire_at, used, user_id
+            RETURNING id, user_id
             "#,
             id,
             now.naive_utc(),
@@ -421,7 +397,7 @@ impl AuthRepository for PgAuthRepository {
         sqlx::query_as!(
             TelegramVerifyHash,
             r#"
-            SELECT id, created_at, hash, expire_at, used, user_id
+            SELECT id, user_id
             FROM telegram_verify_hashes
             WHERE hash = $1 AND used = false AND expire_at > $2
             ORDER BY created_at DESC
@@ -461,21 +437,5 @@ impl AuthRepository for PgAuthRepository {
         .execute(&self.pool)
         .await?;
         Ok(())
-    }
-
-    async fn delete_expired_telegram_hashes(&self) -> Result<u64> {
-        let now = Utc::now();
-
-        let result = sqlx::query!(
-            r#"
-            DELETE FROM telegram_verify_hashes
-            WHERE expire_at < $1 OR used = true
-            "#,
-            now.naive_utc()
-        )
-        .execute(&self.pool)
-        .await?;
-
-        Ok(result.rows_affected())
     }
 }

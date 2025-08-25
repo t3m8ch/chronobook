@@ -1,4 +1,3 @@
-use crate::models::validation::validate_phone;
 use garde::Validate;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -7,7 +6,7 @@ use utoipa::ToSchema;
 #[serde(rename_all = "camelCase")]
 #[garde(context(()))]
 pub struct PhoneLoginRequest {
-    #[garde(custom(validate_phone))]
+    #[garde(phone_number)]
     #[schema(example = "+1234567890")]
     pub phone: String,
 }
@@ -16,7 +15,7 @@ pub struct PhoneLoginRequest {
 #[serde(rename_all = "camelCase")]
 #[garde(context(()))]
 pub struct PhoneVerifyRequest {
-    #[garde(custom(validate_phone))]
+    #[garde(phone_number)]
     #[schema(example = "+1234567890")]
     pub phone: String,
 

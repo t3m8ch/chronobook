@@ -89,7 +89,7 @@ impl BranchRepository for PgBranchRepository {
                 address_info, organization_id
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-            RETURNING id, created_at, updated_at, display_name, description, timezone,
+            RETURNING id, display_name, description, timezone,
                       street, house_number, apartment_number, city, region, country,
                       address_info, organization_id
             "#,
@@ -122,7 +122,7 @@ impl BranchRepository for PgBranchRepository {
             sqlx::query_as!(
                 Branch,
                 r#"
-                SELECT id, created_at, updated_at, display_name, description, timezone,
+                SELECT id, display_name, description, timezone,
                        street, house_number, apartment_number, city, region, country,
                        address_info, organization_id
                 FROM branches
@@ -140,7 +140,7 @@ impl BranchRepository for PgBranchRepository {
             sqlx::query_as!(
                 Branch,
                 r#"
-                SELECT id, created_at, updated_at, display_name, description, timezone,
+                SELECT id, display_name, description, timezone,
                        street, house_number, apartment_number, city, region, country,
                        address_info, organization_id
                 FROM branches
@@ -159,7 +159,7 @@ impl BranchRepository for PgBranchRepository {
         sqlx::query_as!(
             Branch,
             r#"
-            SELECT id, created_at, updated_at, display_name, description, timezone,
+            SELECT id, display_name, description, timezone,
                    street, house_number, apartment_number, city, region, country,
                    address_info, organization_id
             FROM branches
@@ -223,7 +223,7 @@ impl BranchRepository for PgBranchRepository {
                 country = COALESCE($11, country),
                 address_info = $12
             WHERE id = $1
-            RETURNING id, created_at, updated_at, display_name, description, timezone,
+            RETURNING id, display_name, description, timezone,
                       street, house_number, apartment_number, city, region, country,
                       address_info, organization_id
             "#,

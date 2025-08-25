@@ -17,7 +17,7 @@ use crate::{
         master::response::{GetMastersQuery, MasterOut},
         organization::response::OrganizationOut,
         service::{request::GetServicesQuery, response::ServiceOut},
-        timetable::{request::GetWindowsQuery, response::WindowOut},
+        timetable::request::GetWindowsQuery,
     },
 };
 
