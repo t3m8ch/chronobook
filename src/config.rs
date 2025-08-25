@@ -1,89 +1,93 @@
 use axum::http::HeaderValue;
 use chrono::Duration;
 use dotenv::dotenv;
+use serde::{Deserialize, Deserializer, de};
 
+#[derive(Debug, Clone, Deserialize)]
 pub struct Config {
+    #[serde(default = "default_server_addr")]
     pub server_addr: String,
+
     pub jwt_access_secret: String,
+
     pub jwt_refresh_secret: String,
+
+    #[serde(
+        default = "default_jwt_access_duration",
+        rename = "JWT_ACCESS_DURATION_MINUTES",
+        deserialize_with = "minutes"
+    )]
     pub jwt_access_duration: Duration,
+
+    #[serde(
+        default = "default_jwt_refresh_duration",
+        rename = "JWT_REFRESH_DURATION_DAYS",
+        deserialize_with = "days"
+    )]
     pub jwt_refresh_duration: Duration,
+
+    #[serde(
+        default = "default_jwt_cookie_allow_origin",
+        deserialize_with = "header_value"
+    )]
     pub jwt_cookie_allow_origin: HeaderValue,
+
     pub database_url: String,
+
+    #[serde(default = "default_redis_url")]
     pub redis_url: String,
+
     pub telegram_hash_secret: String,
 }
 
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
         dotenv().ok();
-
-        let mut errors: Vec<String> = Vec::new();
-
-        let server_addr = std::env::var("SERVER_ADDR").unwrap_or("0.0.0.0:3222".to_string());
-        let _allow_origin =
-            std::env::var("ALLOW_ORIGIN").unwrap_or("http://localhost:3222".to_string());
-        let access_secret = std::env::var("JWT_ACCESS_SECRET");
-        let refresh_secret = std::env::var("JWT_REFRESH_SECRET");
-        let access_duration_minutes: Result<i64, _> =
-            std::env::var("JWT_ACCESS_EXPIRATION_MINUTES")
-                .unwrap_or("15".to_string())
-                .parse();
-        let refresh_duration_days: Result<i64, _> = std::env::var("JWT_REFRESH_EXPIRATION_DAYS")
-            .unwrap_or("7".to_string())
-            .parse();
-        let jwt_cookie_allow_origin = std::env::var("JWT_COOKIE_ALLOW_ORIGIN")
-            .unwrap_or("http://localhost:3222".to_string())
-            .parse::<HeaderValue>();
-        let database_url = std::env::var("DATABASE_URL");
-        let redis_url = std::env::var("REDIS_URL").unwrap_or("redis://127.0.0.1:6379".to_string());
-        let telegram_hash_secret = std::env::var("TELEGRAM_HASH_SECRET");
-
-        if let Err(_) = access_secret.clone() {
-            errors.push("JWT_ACCESS_SECRET is not set".to_string());
-        }
-
-        if let Err(_) = refresh_secret.clone() {
-            errors.push("JWT_REFRESH_SECRET is not set".to_string());
-        }
-
-        if let Err(_) = access_duration_minutes.clone() {
-            errors.push("JWT_ACCESS_EXPIRATION_MINUTES must be a valid integer".to_string());
-        }
-
-        if let Err(_) = refresh_duration_days.clone() {
-            errors.push("JWT_REFRESH_EXPIRATION_DAYS must be a valid integer".to_string());
-        }
-
-        if jwt_cookie_allow_origin.is_err() {
-            errors.push("JWT_COOKIE_ALLOW_ORIGIN is not set".to_string());
-        }
-
-        if let Err(_) = database_url.clone() {
-            errors.push("DATABASE_URL is not set".to_string());
-        }
-
-        if let Err(_) = telegram_hash_secret.clone() {
-            errors.push("TELEGRAM_HASH_SECRET is not set".to_string());
-        }
-
-        if !errors.is_empty() {
-            return Err(anyhow::Error::msg(format!(
-                "Failed to load configuration. Errors: {:#?}",
-                errors
-            )));
-        }
-
-        Ok(Config {
-            server_addr,
-            jwt_access_secret: access_secret?,
-            jwt_refresh_secret: refresh_secret?,
-            jwt_access_duration: Duration::minutes(access_duration_minutes?),
-            jwt_refresh_duration: Duration::days(refresh_duration_days?),
-            jwt_cookie_allow_origin: jwt_cookie_allow_origin?,
-            database_url: database_url?,
-            redis_url,
-            telegram_hash_secret: telegram_hash_secret?,
-        })
+        envy::from_env().map_err(|e| anyhow::anyhow!("Failed to load environment variables: {e}"))
     }
+}
+
+fn default_server_addr() -> String {
+    "0.0.0.0:3222".to_string()
+}
+
+fn default_jwt_access_duration() -> Duration {
+    Duration::minutes(15)
+}
+
+fn default_jwt_refresh_duration() -> Duration {
+    Duration::days(7)
+}
+
+fn default_jwt_cookie_allow_origin() -> HeaderValue {
+    HeaderValue::from_static("http://localhost:3222")
+}
+
+fn default_redis_url() -> String {
+    "redis://localhost:6379".to_string()
+}
+
+fn header_value<'de, D>(deserializer: D) -> Result<HeaderValue, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: String = Deserialize::deserialize(deserializer)?;
+    HeaderValue::from_str(&value)
+        .map_err(|e| de::Error::custom(format!("Invalid header value: {e}")))
+}
+
+fn minutes<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Deserialize::deserialize(deserializer)?;
+    Ok(Duration::minutes(value))
+}
+
+fn days<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Deserialize::deserialize(deserializer)?;
+    Ok(Duration::days(value))
 }
