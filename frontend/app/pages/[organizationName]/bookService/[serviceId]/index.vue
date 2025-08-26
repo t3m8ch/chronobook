@@ -59,16 +59,18 @@
         </SidebarContent>
       </Sidebar>
       <div class="w-full">
-        <div class="flex items-center">
-          <div class="w-1/3">
+        <div class="flex lg:items-center lg:flex-row flex-col">
+          <div class="lg:w-1/4">
             <SidebarTrigger />
           </div>
-          <div class="mx-auto w-1/3">
-            <h1 class="text-3xl font-bold">Выберите подходящее время</h1>
+          <div class="lg:mx-auto lg:w-2/4 ml-4 lg:ml-0">
+            <h1 class="text-3xl font-bold lg:text-center">
+              Выберите подходящее время
+            </h1>
           </div>
           <NuxtLink
             :to="`/${organizationName}`"
-            class="hover:text-blue-600 transition-colors duration-100 w-1/3 text-end pr-2"
+            class="hover:text-blue-600 transition-colors duration-100 lg:w-1/4 lg:text-end pr-2 ml-4 lg:ml-0"
           >
             Выбрать другую услугу
           </NuxtLink>
