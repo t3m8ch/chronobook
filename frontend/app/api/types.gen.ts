@@ -2299,14 +2299,8 @@ export type GetBranchesData = {
   body?: never;
   path?: never;
   query: {
-    /**
-     * Organization name
-     */
-    organization_name: string;
-    /**
-     * Master IDs filter
-     */
-    'masters[]': Array<string>;
+    organizationName: string;
+    masters?: Array<string>;
   };
   url: '/api/v1/bookings/branches';
 };
@@ -2334,18 +2328,9 @@ export type GetMastersData = {
   body?: never;
   path?: never;
   query: {
-    /**
-     * Organization name
-     */
-    organization_name: string;
-    /**
-     * Branch IDs filter
-     */
-    'branches[]': Array<string>;
-    /**
-     * Service IDs filter
-     */
-    'services[]': Array<string>;
+    organizationName: string;
+    branches?: Array<string>;
+    services?: Array<string>;
   };
   url: '/api/v1/bookings/masters';
 };
@@ -2472,30 +2457,12 @@ export type GetWindowsData = {
   body?: never;
   path?: never;
   query: {
-    /**
-     * Organization name
-     */
-    organization_name: string;
-    /**
-     * Service ID
-     */
-    service_id: string;
-    /**
-     * Master IDs filter
-     */
-    'masters[]': Array<string>;
-    /**
-     * Branch IDs filter
-     */
-    'branches[]': Array<string>;
-    /**
-     * Min datetime
-     */
-    min_datetime: string;
-    /**
-     * Max datetime
-     */
-    max_datetime: string;
+    organizationName: string;
+    serviceId: string;
+    masters: Array<string>;
+    branches: Array<string>;
+    minDatetime: string;
+    maxDatetime: string;
   };
   url: '/api/v1/bookings/windows';
 };

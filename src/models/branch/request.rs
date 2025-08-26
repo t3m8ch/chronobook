@@ -1,6 +1,6 @@
 use garde::Validate;
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema, Validate)]
@@ -79,7 +79,8 @@ pub struct UpdateBranchRequest {
     pub address_info: Option<Option<String>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate, IntoParams)]
+#[into_params(parameter_in = Query)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBranchesQuery {
     #[garde(skip)]

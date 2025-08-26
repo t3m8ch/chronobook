@@ -10,7 +10,9 @@
     </CardHeader>
     <CardFooter class="flex justify-between">
       <span class="text-2xl text-bold">{{ bottomText }}</span>
-      <Button>Заказать</Button>
+      <NuxtLink :to="`${props.organizationName}/bookService/${props.id}`">
+        <Button>Заказать</Button>
+      </NuxtLink>
     </CardFooter>
   </Card>
 </template>
@@ -31,6 +33,7 @@ const props = defineProps<{
   durationMinutes: number;
   name: string;
   price: string | null | undefined;
+  organizationName: string;
 }>();
 
 let bottomText = `${props.durationMinutes} минут`;

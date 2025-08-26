@@ -1,0 +1,123 @@
+<template>
+  <SidebarProvider>
+    <div class="w-full flex">
+      <Sidebar>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel class="text-xl font-bold">
+              Фильтры
+            </SidebarGroupLabel>
+            <SidebarGroupContent class="px-2 flex flex-col gap-2">
+              <div>
+                <Label for="select-master" class="text-lg">Мастер:</Label>
+                <Select id="select-master" v-model="selectedMasterId">
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="Любой мастер" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem
+                        v-for="master in masters.data.value"
+                        :key="master.id"
+                        :value="master.id"
+                      >
+                        {{ master.firstName }} {{ master.lastName }}
+                        {{ master.patronymic || '' }}
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label for="select-branch" class="text-lg">Филиал:</Label>
+                <Select id="select-branch" v-model="selectedBranchId">
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder="Любой филиал" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <BranchSelectItem
+                        v-for="branch in branches.data.value"
+                        :key="branch.id"
+                        :value="branch.id"
+                        :branch-name="branch.name"
+                        :branch-address="`${branch.country}, ${branch.region}, ${branch.city}, ${branch.street}, ${branch.houseNumber}`"
+                      />
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <a
+                href="#"
+                class="hover:text-blue-600 transition-colors duration-100"
+                @click.prevent="clearSelection"
+              >
+                Очистить фильтры
+              </a>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
+      <div class="w-full">
+        <div class="flex items-center">
+          <div class="w-1/3">
+            <SidebarTrigger />
+          </div>
+          <div class="mx-auto w-1/3">
+            <h1 class="text-3xl font-bold">Выберите подходящее время</h1>
+          </div>
+          <NuxtLink
+            :to="`/${organizationName}`"
+            class="hover:text-blue-600 transition-colors duration-100 w-1/3 text-end pr-2"
+          >
+            Выбрать другую услугу
+          </NuxtLink>
+        </div>
+      </div>
+    </div>
+  </SidebarProvider>
+</template>
+
+<script setup lang="ts">
+import { getBranches, getMasters } from '~/api';
+import {
+  Sidebar,
+  SidebarProvider,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarTrigger,
+  SidebarGroupContent,
+} from '@/components/ui/sidebar';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectGroup,
+  SelectContent,
+  SelectItem,
+  BranchSelectItem,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+
+const route = useRoute();
+const organizationName = route.params.organizationName as string;
+
+const selectedMasterId = ref<string | null>(null);
+const selectedBranchId = ref<string | null>(null);
+
+const masters = await getMasters({
+  composable: 'useFetch',
+  query: { organizationName },
+});
+
+const branches = await getBranches({
+  composable: 'useFetch',
+  query: { organizationName },
+});
+
+const clearSelection = () => {
+  selectedMasterId.value = null;
+  selectedBranchId.value = null;
+};
+</script>

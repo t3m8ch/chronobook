@@ -14,7 +14,7 @@ use crate::{
         booking::{request::CreateBookingRequest, response::BookingOut},
         branch::{request::GetBranchesQuery, response::BranchOut},
         error::ApiError,
-        master::response::{GetMastersQuery, MasterOut},
+        master::{request::GetMastersQuery, response::MasterOut},
         organization::response::OrganizationOut,
         service::{request::GetServicesQuery, response::ServiceOut},
         timetable::request::GetWindowsQuery,
@@ -82,11 +82,7 @@ pub async fn get_services(
 #[utoipa::path(
     get,
     path = "/masters",
-    params(
-        ("organization_name" = String, Query, description = "Organization name"),
-        ("branches[]" = Vec<Uuid>, Query, description = "Branch IDs filter"),
-        ("services[]" = Vec<Uuid>, Query, description = "Service IDs filter"),
-    ),
+    params(GetMastersQuery),
     responses(
         (status = 200, description = "List of masters", body = Vec<MasterOut>),
         (status = 500, description = "Internal server error", body = ApiError)
@@ -130,10 +126,7 @@ pub async fn get_master_by_id(
 #[utoipa::path(
     get,
     path = "/branches",
-    params(
-        ("organization_name" = String, Query, description = "Organization name"),
-        ("masters[]" = Vec<Uuid>, Query, description = "Master IDs filter")
-    ),
+    params(GetBranchesQuery),
     responses(
         (status = 200, description = "List of branches", body = Vec<BranchOut>),
         (status = 500, description = "Internal server error", body = ApiError)
@@ -155,14 +148,7 @@ pub async fn get_branches(
 #[utoipa::path(
     get,
     path = "/windows",
-    params(
-        ("organization_name" = String, Query, description = "Organization name"),
-        ("service_id" = Uuid, Query, description = "Service ID"),
-        ("masters[]" = Vec<Uuid>, Query, description = "Master IDs filter"),
-        ("branches[]" = Vec<Uuid>, Query, description = "Branch IDs filter"),
-        ("min_datetime" = NaiveDateTime, Query, description = "Min datetime"),
-        ("max_datetime" = NaiveDateTime, Query, description = "Max datetime"),
-    ),
+    params(GetWindowsQuery),
     responses(
         (status = 200, description = "List of branches", body = Vec<BranchOut>),
         (status = 500, description = "Internal server error", body = ApiError)

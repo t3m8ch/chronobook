@@ -56,6 +56,7 @@
           :description="service.description"
           :duration-minutes="service.durationMinutes"
           :price="service.price"
+          :organization-name="orgData.name"
         />
       </div>
       <div

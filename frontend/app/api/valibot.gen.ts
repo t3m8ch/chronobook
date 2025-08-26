@@ -1039,8 +1039,8 @@ export const vGetBranchesData = v.object({
   body: v.optional(v.never()),
   path: v.optional(v.never()),
   query: v.object({
-    organization_name: v.string(),
-    'masters[]': v.array(v.pipe(v.string(), v.uuid())),
+    organizationName: v.string(),
+    masters: v.optional(v.array(v.pipe(v.string(), v.uuid()))),
   }),
 });
 
@@ -1053,9 +1053,9 @@ export const vGetMastersData = v.object({
   body: v.optional(v.never()),
   path: v.optional(v.never()),
   query: v.object({
-    organization_name: v.string(),
-    'branches[]': v.array(v.pipe(v.string(), v.uuid())),
-    'services[]': v.array(v.pipe(v.string(), v.uuid())),
+    organizationName: v.string(),
+    branches: v.optional(v.array(v.pipe(v.string(), v.uuid()))),
+    services: v.optional(v.array(v.pipe(v.string(), v.uuid()))),
   }),
 });
 
@@ -1108,12 +1108,12 @@ export const vGetWindowsData = v.object({
   body: v.optional(v.never()),
   path: v.optional(v.never()),
   query: v.object({
-    organization_name: v.string(),
-    service_id: v.pipe(v.string(), v.uuid()),
-    'masters[]': v.array(v.pipe(v.string(), v.uuid())),
-    'branches[]': v.array(v.pipe(v.string(), v.uuid())),
-    min_datetime: v.pipe(v.string(), v.isoTimestamp()),
-    max_datetime: v.pipe(v.string(), v.isoTimestamp()),
+    organizationName: v.string(),
+    serviceId: v.pipe(v.string(), v.uuid()),
+    masters: v.array(v.pipe(v.string(), v.uuid())),
+    branches: v.array(v.pipe(v.string(), v.uuid())),
+    minDatetime: v.pipe(v.string(), v.isoTimestamp()),
+    maxDatetime: v.pipe(v.string(), v.isoTimestamp()),
   }),
 });
 
