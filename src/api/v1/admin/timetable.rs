@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     AppState,
     models::{
-        error::ApiError,
+        error::{ApiError, ErrorType},
         timetable::{
             request::{
                 CreateDayRedefinitionRequest, CreateTimetableRequest, UpdateTimetableRequest,
@@ -60,7 +60,7 @@ pub async fn create_timetable(
         .timetable_service
         .create_timetable(request)
         .await
-        .map_err(|e| ApiError::new("TIMETABLE_CREATE_ERROR", &e.to_string()))?;
+        .map_err(|e| ApiError::new(ErrorType::InternalServer, &e.to_string()))?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -91,7 +91,7 @@ pub async fn list_timetables(
         .timetable_service
         .list_timetables(query.organization_id)
         .await
-        .map_err(|e| ApiError::new("TIMETABLES_LIST_ERROR", &e.to_string()))?;
+        .map_err(|e| ApiError::new(ErrorType::InternalServer, &e.to_string()))?;
     Ok(Json(timetables))
 }
 
@@ -125,9 +125,9 @@ pub async fn get_timetable_with_redefinitions(
         .await
         .map_err(|e| match &e {
             crate::services::errors::ServiceError::NotFound(_) => {
-                ApiError::new("TIMETABLE_NOT_FOUND", "Timetable not found")
+                ApiError::new(ErrorType::NotFound, "Timetable not found")
             }
-            _ => ApiError::new("TIMETABLE_GET_ERROR", &e.to_string()),
+            _ => ApiError::new(ErrorType::InternalServer, &e.to_string()),
         })?;
     Ok(Json(timetable_with_redefinitions))
 }
@@ -164,9 +164,9 @@ pub async fn update_timetable(
         .await
         .map_err(|e| match &e {
             crate::services::errors::ServiceError::NotFound(_) => {
-                ApiError::new("TIMETABLE_NOT_FOUND", "Timetable not found")
+                ApiError::new(ErrorType::NotFound, "Timetable not found")
             }
-            _ => ApiError::new("TIMETABLE_UPDATE_ERROR", &e.to_string()),
+            _ => ApiError::new(ErrorType::InternalServer, &e.to_string()),
         })?;
     Ok(Json(updated_timetable))
 }
@@ -201,9 +201,9 @@ pub async fn delete_timetable(
         .await
         .map_err(|e| match &e {
             crate::services::errors::ServiceError::NotFound(_) => {
-                ApiError::new("TIMETABLE_NOT_FOUND", "Timetable not found")
+                ApiError::new(ErrorType::NotFound, "Timetable not found")
             }
-            _ => ApiError::new("TIMETABLE_DELETE_ERROR", &e.to_string()),
+            _ => ApiError::new(ErrorType::InternalServer, &e.to_string()),
         })?;
     Ok(StatusCode::NO_CONTENT)
 }
@@ -236,9 +236,9 @@ pub async fn create_day_redefinition(
         .await
         .map_err(|e| match &e {
             crate::services::errors::ServiceError::NotFound(_) => {
-                ApiError::new("TIMETABLE_NOT_FOUND", "Timetable not found for this master")
+                ApiError::new(ErrorType::NotFound, "Timetable not found for this master")
             }
-            _ => ApiError::new("DAY_REDEFINITION_CREATE_ERROR", &e.to_string()),
+            _ => ApiError::new(ErrorType::InternalServer, &e.to_string()),
         })?;
     Ok(StatusCode::NO_CONTENT)
 }
@@ -274,9 +274,9 @@ pub async fn delete_day_redefinition(
         .await
         .map_err(|e| match &e {
             crate::services::errors::ServiceError::NotFound(_) => {
-                ApiError::new("DAY_REDEFINITION_NOT_FOUND", "Day redefinition not found")
+                ApiError::new(ErrorType::NotFound, "Day redefinition not found")
             }
-            _ => ApiError::new("DAY_REDEFINITION_DELETE_ERROR", &e.to_string()),
+            _ => ApiError::new(ErrorType::InternalServer, &e.to_string()),
         })?;
     Ok(StatusCode::NO_CONTENT)
 }

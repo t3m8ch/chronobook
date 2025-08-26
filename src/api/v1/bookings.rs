@@ -40,7 +40,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     ),
     responses(
         (status = 200, description = "Organization with name", body = OrganizationOut),
-        (status = 404, description = "Organization not found", body = OrganizationOut),
+        (status = 404, description = "Organization not found", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "bookings"
@@ -60,10 +60,7 @@ pub async fn get_organization_by_name(
 #[utoipa::path(
     get,
     path = "/services",
-    params(
-        ("organization_name" = String, Query, description = "Organization name"),
-        ("masters[]" = Vec<Uuid>, Query, description = "Master IDs filter")
-    ),
+    params(GetServicesQuery),
     responses(
         (status = 200, description = "List of services", body = Vec<ServiceOut>),
         (status = 500, description = "Internal server error", body = ApiError)
@@ -116,7 +113,7 @@ pub async fn get_masters(
     ),
     responses(
         (status = 200, description = "Master with ID", body = MasterOut),
-        (status = 404, description = "Master not found", body = MasterOut),
+        (status = 404, description = "Master not found", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "bookings"

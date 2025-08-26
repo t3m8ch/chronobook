@@ -15,7 +15,7 @@ use crate::{
             request::{CreateEmployeeRequest, UpdateEmployeeRequest},
             response::{CreateEmployeeOut, EmployeeOut},
         },
-        error::ApiError,
+        error::{ApiError, ErrorType},
     },
 };
 
@@ -56,7 +56,7 @@ pub async fn create_employee(
     // Ensure user has an organization context
     let org_id = auth_user
         .organization_id
-        .ok_or_else(|| ApiError::new("MISSING_ORGANIZATION", "Organization context required"))?;
+        .ok_or_else(|| ApiError::new(ErrorType::NotFound, "Organization context required"))?;
 
     let result = state
         .employee_service
@@ -93,7 +93,7 @@ pub async fn list_employees(
     // Ensure user has an organization context
     let org_id = auth_user
         .organization_id
-        .ok_or_else(|| ApiError::new("MISSING_ORGANIZATION", "Organization context required"))?;
+        .ok_or_else(|| ApiError::new(ErrorType::NotFound, "Organization context required"))?;
 
     let limit = query.limit.unwrap_or(20) as i64;
     let offset = query.offset.unwrap_or(0) as i64;

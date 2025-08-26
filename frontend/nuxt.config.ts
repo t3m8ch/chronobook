@@ -13,4 +13,9 @@ export default defineNuxtConfig({
   vite: {
     plugins: [tailwindcss()],
   },
+  runtimeConfig: {
+    public: {
+      apiBaseUrl: 'http://localhost:3222',
+    },
+  },
 });

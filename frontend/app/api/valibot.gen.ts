@@ -6,9 +6,26 @@ export const vAccessToken = v.object({
   accessToken: v.string(),
 });
 
+export const vErrorType = v.picklist([
+  'NOT_FOUND',
+  'BAD_REQUEST',
+  'INVALID_VERIFICATION_CODE',
+  'VERIFICATION_CODE_EXPIRED',
+  'INVALID_TELEGRAM_HASH',
+  'TELEGRAM_HASH_NOT_VERIFIED',
+  'INVALID_REFRESH_TOKEN',
+  'UNAUTHORIZED',
+  'FORBIDDEN',
+  'CONFLICT',
+  'INTERNAL_SERVER',
+  'RATE_LIMIT_EXCEEDED',
+  'VALIDATION',
+  'NOT_IMPLEMENTED',
+]);
+
 export const vApiError = v.object({
   details: v.optional(v.unknown()),
-  error: v.string(),
+  error: vErrorType,
   message: v.string(),
 });
 
@@ -1077,8 +1094,8 @@ export const vGetServicesData = v.object({
   body: v.optional(v.never()),
   path: v.optional(v.never()),
   query: v.object({
-    organization_name: v.string(),
-    'masters[]': v.array(v.pipe(v.string(), v.uuid())),
+    organizationName: v.string(),
+    masters: v.optional(v.array(v.pipe(v.string(), v.uuid()))),
   }),
 });
 

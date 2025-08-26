@@ -17,7 +17,10 @@ pub mod timetable;
 
 use crate::{
     AppState,
-    models::{dashboard::response::OrganizationDashboardOut, error::ApiError},
+    models::{
+        dashboard::response::OrganizationDashboardOut,
+        error::{ApiError, ErrorType},
+    },
 };
 
 pub fn router() -> OpenApiRouter<AppState> {
@@ -71,5 +74,5 @@ pub async fn get_organization_dashboard(
     State(_state): State<AppState>,
 ) -> Result<Json<OrganizationDashboardOut>, ApiError> {
     // TODO: Implement get organization dashboard logic
-    Err(ApiError::new("NOT_IMPLEMENTED", "Not implemented"))
+    Err(ApiError::new(ErrorType::NotImplemented, "Not implemented"))
 }

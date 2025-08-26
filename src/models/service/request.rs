@@ -1,5 +1,6 @@
 use garde::Validate;
 use serde::{Deserialize, Serialize};
+use utoipa::IntoParams;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -47,7 +48,8 @@ pub struct UpdateServiceRequest {
     pub master_id: Option<Option<Uuid>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate, IntoParams)]
+#[into_params(parameter_in = Query)]
 #[serde(rename_all = "camelCase")]
 pub struct GetServicesQuery {
     #[garde(skip)]

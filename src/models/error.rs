@@ -8,85 +8,105 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct ApiError {
-    pub error: String,
+    pub error: ErrorType,
     pub message: String,
     pub details: Option<serde_json::Value>,
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ErrorType {
+    NotFound,
+    BadRequest,
+    InvalidVerificationCode,
+    VerificationCodeExpired,
+    InvalidTelegramHash,
+    TelegramHashNotVerified,
+    InvalidRefreshToken,
+    Unauthorized,
+    Forbidden,
+    Conflict,
+    InternalServer,
+    RateLimitExceeded,
+    Validation,
+    NotImplemented,
+}
+
 impl ApiError {
-    pub fn new(error: impl Into<String>, message: impl Into<String>) -> Self {
+    pub fn new(error_type: ErrorType, message: impl Into<String>) -> Self {
         Self {
-            error: error.into(),
+            error: error_type,
             message: message.into(),
             details: None,
         }
     }
 
     pub fn not_found(message: impl Into<String>) -> Self {
-        Self::new("NOT_FOUND", message)
+        Self::new(ErrorType::NotFound, message)
     }
 
     pub fn bad_request(message: impl Into<String>) -> Self {
-        Self::new("BAD_REQUEST", message)
+        Self::new(ErrorType::BadRequest, message)
     }
 
     pub fn invalid_verification_code(message: impl Into<String>) -> Self {
-        Self::new("INVALID_VERIFICATION_CODE", message)
+        Self::new(ErrorType::InvalidVerificationCode, message)
     }
 
     pub fn verification_code_expired(message: impl Into<String>) -> Self {
-        Self::new("VERIFICATION_CODE_EXPIRED", message)
+        Self::new(ErrorType::VerificationCodeExpired, message)
     }
 
     pub fn invalid_telegram_hash(message: impl Into<String>) -> Self {
-        Self::new("INVALID_TELEGRAM_HASH", message)
+        Self::new(ErrorType::InvalidTelegramHash, message)
     }
 
     pub fn telegram_hash_not_verified(message: impl Into<String>) -> Self {
-        Self::new("TELEGRAM_HASH_NOT_VERIFIED", message)
+        Self::new(ErrorType::TelegramHashNotVerified, message)
     }
 
     pub fn invalid_refresh_token(message: impl Into<String>) -> Self {
-        Self::new("INVALID_REFRESH_TOKEN", message)
+        Self::new(ErrorType::InvalidRefreshToken, message)
     }
 
     pub fn unauthorized(message: impl Into<String>) -> Self {
-        Self::new("UNAUTHORIZED", message)
+        Self::new(ErrorType::Unauthorized, message)
     }
 
     pub fn forbidden(message: impl Into<String>) -> Self {
-        Self::new("FORBIDDEN", message)
+        Self::new(ErrorType::Forbidden, message)
     }
 
     pub fn conflict(message: impl Into<String>) -> Self {
-        Self::new("CONFLICT", message)
+        Self::new(ErrorType::Conflict, message)
     }
 
     pub fn internal_server_error(message: impl Into<String>) -> Self {
-        Self::new("INTERNAL_SERVER_ERROR", message)
+        Self::new(ErrorType::InternalServer, message)
     }
 
     pub fn rate_limit(message: impl Into<String>) -> Self {
-        Self::new("RATE_LIMIT_EXCEEDED", message)
+        Self::new(ErrorType::RateLimitExceeded, message)
     }
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let status = match self.error.as_str() {
-            "NOT_FOUND" => StatusCode::NOT_FOUND,
-            "BAD_REQUEST" => StatusCode::BAD_REQUEST,
-            "VALIDATION_ERROR" => StatusCode::BAD_REQUEST,
-            "INVALID_VERIFICATION_CODE" => StatusCode::BAD_REQUEST,
-            "VERIFICATION_CODE_EXPIRED" => StatusCode::BAD_REQUEST,
-            "INVALID_TELEGRAM_HASH" => StatusCode::BAD_REQUEST,
-            "TELEGRAM_HASH_NOT_VERIFIED" => StatusCode::BAD_REQUEST,
-            "INVALID_REFRESH_TOKEN" => StatusCode::BAD_REQUEST,
-            "UNAUTHORIZED" => StatusCode::UNAUTHORIZED,
-            "FORBIDDEN" => StatusCode::FORBIDDEN,
-            "CONFLICT" => StatusCode::CONFLICT,
-            "RATE_LIMIT_EXCEEDED" => StatusCode::TOO_MANY_REQUESTS,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        let status = match self.error {
+            ErrorType::NotFound => StatusCode::NOT_FOUND,
+            ErrorType::BadRequest => StatusCode::BAD_REQUEST,
+            ErrorType::Validation => StatusCode::BAD_REQUEST,
+            ErrorType::InvalidVerificationCode => StatusCode::BAD_REQUEST,
+            ErrorType::VerificationCodeExpired => StatusCode::BAD_REQUEST,
+            ErrorType::InvalidTelegramHash => StatusCode::BAD_REQUEST,
+            ErrorType::TelegramHashNotVerified => StatusCode::BAD_REQUEST,
+            ErrorType::InvalidRefreshToken => StatusCode::BAD_REQUEST,
+            ErrorType::Unauthorized => StatusCode::UNAUTHORIZED,
+            ErrorType::Forbidden => StatusCode::FORBIDDEN,
+            ErrorType::Conflict => StatusCode::CONFLICT,
+            ErrorType::RateLimitExceeded => StatusCode::TOO_MANY_REQUESTS,
+            ErrorType::InternalServer => StatusCode::INTERNAL_SERVER_ERROR,
+            ErrorType::NotImplemented => StatusCode::NOT_IMPLEMENTED,
         };
 
         (status, Json(self)).into_response()
@@ -95,6 +115,6 @@ impl IntoResponse for ApiError {
 
 impl From<anyhow::Error> for ApiError {
     fn from(err: anyhow::Error) -> Self {
-        ApiError::new("INTERNAL_ERROR", err.to_string())
+        ApiError::new(ErrorType::InternalServer, err.to_string())
     }
 }

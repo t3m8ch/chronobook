@@ -11,7 +11,7 @@ use crate::{
     AppState,
     extractors::auth::AuthUser,
     models::{
-        error::ApiError,
+        error::{ApiError, ErrorType},
         service::{
             request::{CreateServiceRequest, UpdateServiceRequest},
             response::{CreateServiceOut, ServiceOut},
@@ -52,21 +52,20 @@ pub async fn create_service(
     State(state): State<AppState>,
     Garde(Json(request)): Garde<Json<CreateServiceRequest>>,
 ) -> Result<Json<CreateServiceOut>, ApiError> {
-    let organization_id = auth_user.get_organization_id().ok_or_else(|| {
-        ApiError::new(
-            "MISSING_ORGANIZATION",
-            "User must belong to an organization",
-        )
-    })?;
+    let organization_id = auth_user
+        .get_organization_id()
+        .ok_or_else(|| ApiError::new(ErrorType::NotFound, "User must belong to an organization"))?;
 
     let result = state
         .service_service
         .create_service(request, organization_id)
         .await
         .map_err(|e| match e {
-            ServiceError::ValidationError(msg) => ApiError::new("VALIDATION_ERROR", &msg),
-            ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
-            _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
+            ServiceError::ValidationError(msg) => ApiError::new(ErrorType::Validation, &msg),
+            ServiceError::DatabaseError(_) => {
+                ApiError::new(ErrorType::InternalServer, "Database error")
+            }
+            _ => ApiError::new(ErrorType::InternalServer, "Internal server error"),
         })?;
 
     Ok(Json(result))
@@ -94,12 +93,9 @@ pub async fn list_services(
     Query(query): Query<ListQuery>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<ServiceOut>>, ApiError> {
-    let organization_id = auth_user.get_organization_id().ok_or_else(|| {
-        ApiError::new(
-            "MISSING_ORGANIZATION",
-            "User must belong to an organization",
-        )
-    })?;
+    let organization_id = auth_user
+        .get_organization_id()
+        .ok_or_else(|| ApiError::new(ErrorType::NotFound, "User must belong to an organization"))?;
 
     let limit = query.limit.unwrap_or(50).min(100) as i64;
     let offset = query.offset.unwrap_or(0) as i64;
@@ -109,8 +105,10 @@ pub async fn list_services(
         .list_services(organization_id, limit, offset)
         .await
         .map_err(|e| match e {
-            ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
-            _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
+            ServiceError::DatabaseError(_) => {
+                ApiError::new(ErrorType::InternalServer, "Database error")
+            }
+            _ => ApiError::new(ErrorType::InternalServer, "Internal server error"),
         })?;
 
     Ok(Json(services))
@@ -140,10 +138,7 @@ pub async fn get_service(
     State(state): State<AppState>,
 ) -> Result<Json<ServiceOut>, ApiError> {
     let organization_id = auth_user.get_organization_id().ok_or_else(|| {
-        ApiError::new(
-            "MISSING_ORGANIZATION",
-            "User must belong to an organization",
-        )
+        ApiError::new(ErrorType::Forbidden, "User must belong to an organization")
     })?;
 
     let service = state
@@ -151,9 +146,8 @@ pub async fn get_service(
         .get_service(service_id, organization_id)
         .await
         .map_err(|e| match e {
-            ServiceError::NotFound(_) => ApiError::new("NOT_FOUND", "Service not found"),
-            ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
-            _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
+            ServiceError::NotFound(_) => ApiError::new(ErrorType::NotFound, "Service not found"),
+            _ => ApiError::new(ErrorType::InternalServer, "Internal server error"),
         })?;
 
     Ok(Json(service))
@@ -185,10 +179,7 @@ pub async fn update_service(
     Garde(Json(request)): Garde<Json<UpdateServiceRequest>>,
 ) -> Result<Json<ServiceOut>, ApiError> {
     let organization_id = auth_user.get_organization_id().ok_or_else(|| {
-        ApiError::new(
-            "MISSING_ORGANIZATION",
-            "User must belong to an organization",
-        )
+        ApiError::new(ErrorType::Forbidden, "User must belong to an organization")
     })?;
 
     let service = state
@@ -196,10 +187,9 @@ pub async fn update_service(
         .update_service(service_id, request, organization_id)
         .await
         .map_err(|e| match e {
-            ServiceError::NotFound(_) => ApiError::new("NOT_FOUND", "Service not found"),
-            ServiceError::ValidationError(msg) => ApiError::new("VALIDATION_ERROR", &msg),
-            ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
-            _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
+            ServiceError::NotFound(_) => ApiError::new(ErrorType::NotFound, "Service not found"),
+            ServiceError::ValidationError(msg) => ApiError::new(ErrorType::Validation, &msg),
+            _ => ApiError::new(ErrorType::InternalServer, "Internal server error"),
         })?;
 
     Ok(Json(service))
@@ -229,10 +219,7 @@ pub async fn delete_service(
     State(state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
     let organization_id = auth_user.get_organization_id().ok_or_else(|| {
-        ApiError::new(
-            "MISSING_ORGANIZATION",
-            "User must belong to an organization",
-        )
+        ApiError::new(ErrorType::Forbidden, "User must belong to an organization")
     })?;
 
     state
@@ -240,9 +227,8 @@ pub async fn delete_service(
         .delete_service(service_id, organization_id)
         .await
         .map_err(|e| match e {
-            ServiceError::NotFound(_) => ApiError::new("NOT_FOUND", "Service not found"),
-            ServiceError::DatabaseError(_) => ApiError::new("INTERNAL_ERROR", "Database error"),
-            _ => ApiError::new("INTERNAL_ERROR", "Internal server error"),
+            ServiceError::NotFound(_) => ApiError::new(ErrorType::NotFound, "Service not found"),
+            _ => ApiError::new(ErrorType::InternalServer, "Internal server error"),
         })?;
 
     Ok(StatusCode::NO_CONTENT)

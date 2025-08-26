@@ -6,7 +6,7 @@ export type AccessToken = {
 
 export type ApiError = {
   details?: unknown;
-  error: string;
+  error: ErrorType;
   message: string;
 };
 
@@ -184,6 +184,22 @@ export type EmployeeRole =
   | {
       role: 'master';
     };
+
+export type ErrorType =
+  | 'NOT_FOUND'
+  | 'BAD_REQUEST'
+  | 'INVALID_VERIFICATION_CODE'
+  | 'VERIFICATION_CODE_EXPIRED'
+  | 'INVALID_TELEGRAM_HASH'
+  | 'TELEGRAM_HASH_NOT_VERIFIED'
+  | 'INVALID_REFRESH_TOKEN'
+  | 'UNAUTHORIZED'
+  | 'FORBIDDEN'
+  | 'CONFLICT'
+  | 'INTERNAL_SERVER'
+  | 'RATE_LIMIT_EXCEEDED'
+  | 'VALIDATION'
+  | 'NOT_IMPLEMENTED';
 
 export type Interval = {
   end: string;
@@ -2368,7 +2384,7 @@ export type GetMasterByIdErrors = {
   /**
    * Master not found
    */
-  404: MasterOut;
+  404: ApiError;
   /**
    * Internal server error
    */
@@ -2403,7 +2419,7 @@ export type GetOrganizationByNameErrors = {
   /**
    * Organization not found
    */
-  404: OrganizationOut;
+  404: ApiError;
   /**
    * Internal server error
    */
@@ -2427,14 +2443,8 @@ export type GetServicesData = {
   body?: never;
   path?: never;
   query: {
-    /**
-     * Organization name
-     */
-    organization_name: string;
-    /**
-     * Master IDs filter
-     */
-    'masters[]': Array<string>;
+    organizationName: string;
+    masters?: Array<string>;
   };
   url: '/api/v1/bookings/services';
 };
