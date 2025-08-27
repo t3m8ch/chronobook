@@ -76,19 +76,26 @@
           </NuxtLink>
         </div>
         <div class="max-w-3xl mx-auto flex flex-col gap-2">
-          <BookingWindow
-            v-for="window in windows.data.value"
-            :key="window.id"
-            :id="window.id"
-            :master="{ ...window.master }"
-            :branch="{ address: address(window.branch), ...window.branch }"
-            :slots="
-              window.slots.map((slot) => ({
-                start: dayjs(slot.start),
-                end: dayjs(slot.end),
-              }))
-            "
-          />
+          <ClientOnly>
+            <BookingWindow
+              v-for="window in windows.data.value"
+              :key="window.id"
+              :id="window.id"
+              :master="{ ...window.master }"
+              :branch="{ address: address(window.branch), ...window.branch }"
+              :slots="
+                window.slots.map((slot) => ({
+                  start: dayjs(slot.start),
+                  end: dayjs(slot.end),
+                }))
+              "
+            />
+            <template #fallback>
+              <div class="flex justify-center items-center py-8">
+                <div class="text-gray-500">Загрузка доступных окон...</div>
+              </div>
+            </template>
+          </ClientOnly>
         </div>
       </div>
     </div>
@@ -125,22 +132,37 @@ const serviceId = route.params.serviceId as string;
 const selectedMasterId = ref<string | null>(null);
 const selectedBranchId = ref<string | null>(null);
 
+const mastersQuery = computed(() => ({
+  organizationName,
+  'branches[]': selectedBranchId.value ? selectedBranchId.value : undefined,
+}));
+
+const branchesQuery = computed(() => ({
+  organizationName,
+  'masters[]': selectedMasterId.value ? selectedMasterId.value : undefined,
+}));
+
+const windowsQuery = computed(() => ({
+  organizationName,
+  serviceId,
+  'masters[]': selectedMasterId.value ? selectedMasterId.value : undefined,
+  'branches[]': selectedBranchId.value ? selectedBranchId.value : undefined,
+}));
+
 const masters = await getMasters({
   composable: 'useFetch',
-  query: { organizationName },
+  query: mastersQuery,
 });
 
 const branches = await getBranches({
   composable: 'useFetch',
-  query: { organizationName },
+  query: branchesQuery,
 });
 
 const windows = await getWindows({
   composable: 'useFetch',
-  query: { organizationName, serviceId },
+  query: windowsQuery,
 });
-
-console.log(windows.data.value);
 
 const clearSelection = () => {
   selectedMasterId.value = null;
