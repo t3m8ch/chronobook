@@ -471,6 +471,13 @@ export const vUserProfileResponse = v.object({
   patronymic: v.optional(v.union([v.string(), v.null()])),
 });
 
+export const vWindowOut = v.object({
+  branch: vBranchOut,
+  id: v.pipe(v.string(), v.uuid()),
+  master: vMasterOut,
+  slots: v.array(vInterval),
+});
+
 export const vGetBookingNotificationsData = v.object({
   body: v.optional(v.never()),
   path: v.object({
@@ -1110,14 +1117,14 @@ export const vGetWindowsData = v.object({
   query: v.object({
     organizationName: v.string(),
     serviceId: v.pipe(v.string(), v.uuid()),
-    masters: v.array(v.pipe(v.string(), v.uuid())),
-    branches: v.array(v.pipe(v.string(), v.uuid())),
-    minDatetime: v.pipe(v.string(), v.isoTimestamp()),
-    maxDatetime: v.pipe(v.string(), v.isoTimestamp()),
+    masters: v.optional(v.array(v.pipe(v.string(), v.uuid()))),
+    branches: v.optional(v.array(v.pipe(v.string(), v.uuid()))),
+    minDatetime: v.optional(v.pipe(v.string(), v.isoTimestamp())),
+    maxDatetime: v.optional(v.pipe(v.string(), v.isoTimestamp())),
   }),
 });
 
 /**
  * List of branches
  */
-export const vGetWindowsResponse = v.array(vBranchOut);
+export const vGetWindowsResponse = v.array(vWindowOut);

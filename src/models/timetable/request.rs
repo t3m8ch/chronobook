@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{Duration, NaiveDate, NaiveDateTime, Utc};
 use garde::Validate;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
@@ -69,14 +69,26 @@ pub struct GetWindowsQuery {
     pub service_id: Uuid,
 
     #[garde(skip)]
+    #[serde(default)]
     pub masters: Vec<Uuid>,
 
     #[garde(skip)]
+    #[serde(default)]
     pub branches: Vec<Uuid>,
 
     #[garde(skip)]
+    #[serde(default = "min_datetime_default")]
     pub min_datetime: NaiveDateTime,
 
     #[garde(skip)]
+    #[serde(default = "max_datetime_default")]
     pub max_datetime: NaiveDateTime,
+}
+
+fn min_datetime_default() -> NaiveDateTime {
+    Utc::now().naive_utc()
+}
+
+fn max_datetime_default() -> NaiveDateTime {
+    Utc::now().naive_utc() + Duration::days(7)
 }

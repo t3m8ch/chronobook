@@ -41,7 +41,7 @@
                         :key="branch.id"
                         :value="branch.id"
                         :branch-name="branch.name"
-                        :branch-address="`${branch.country}, ${branch.region}, ${branch.city}, ${branch.street}, ${branch.houseNumber}`"
+                        :branch-address="address(branch)"
                       />
                     </SelectGroup>
                   </SelectContent>
@@ -64,8 +64,8 @@
             <SidebarTrigger />
           </div>
           <div class="lg:mx-auto lg:w-2/4 ml-4 lg:ml-0">
-            <h1 class="text-3xl font-bold lg:text-center">
-              Выберите подходящее время
+            <h1 class="text-2xl font-bold lg:text-center">
+              Выберите мастера, место и время
             </h1>
           </div>
           <NuxtLink
@@ -75,13 +75,28 @@
             Выбрать другую услугу
           </NuxtLink>
         </div>
+        <div class="max-w-3xl mx-auto flex flex-col gap-2">
+          <BookingWindow
+            v-for="window in windows.data.value"
+            :key="window.id"
+            :id="window.id"
+            :master="{ ...window.master }"
+            :branch="{ address: address(window.branch), ...window.branch }"
+            :slots="
+              window.slots.map((slot) => ({
+                start: dayjs(slot.start),
+                end: dayjs(slot.end),
+              }))
+            "
+          />
+        </div>
       </div>
     </div>
   </SidebarProvider>
 </template>
 
 <script setup lang="ts">
-import { getBranches, getMasters } from '~/api';
+import { getBranches, getMasters, getWindows } from '~/api';
 import {
   Sidebar,
   SidebarProvider,
@@ -101,9 +116,11 @@ import {
   BranchSelectItem,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import dayjs from 'dayjs';
 
 const route = useRoute();
 const organizationName = route.params.organizationName as string;
+const serviceId = route.params.serviceId as string;
 
 const selectedMasterId = ref<string | null>(null);
 const selectedBranchId = ref<string | null>(null);
@@ -118,8 +135,24 @@ const branches = await getBranches({
   query: { organizationName },
 });
 
+const windows = await getWindows({
+  composable: 'useFetch',
+  query: { organizationName, serviceId },
+});
+
+console.log(windows.data.value);
+
 const clearSelection = () => {
   selectedMasterId.value = null;
   selectedBranchId.value = null;
 };
+
+const address = (branch: {
+  country: string;
+  region: string;
+  city: string;
+  street: string;
+  houseNumber: string;
+}) =>
+  `${branch.country}, ${branch.region}, ${branch.city}, ${branch.street}, ${branch.houseNumber}`;
 </script>

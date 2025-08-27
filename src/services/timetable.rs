@@ -3,12 +3,17 @@ use chrono::NaiveDate;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::models::timetable::{
-    request::{CreateDayRedefinitionRequest, CreateTimetableRequest, UpdateTimetableRequest},
-    response::{DayRedefinitionOut, ScheduleDayOut, TimetableOut, TimetableWithRedefinitionsOut},
-};
 use crate::repositories::timetable::TimetableRepository;
 use crate::services::errors::{ServiceError, ServiceResult};
+use crate::{
+    models::timetable::{
+        request::{CreateDayRedefinitionRequest, CreateTimetableRequest, UpdateTimetableRequest},
+        response::{
+            DayRedefinitionOut, ScheduleDayOut, TimetableOut, TimetableWithRedefinitionsOut,
+        },
+    },
+    services::booking::BookingServiceImpl,
+};
 
 #[async_trait]
 pub trait TimetableService: Send + Sync {
@@ -118,7 +123,9 @@ impl TimetableService for TimetableServiceImpl {
             .map(|day| ScheduleDayOut {
                 master_id: day.master_id,
                 day_ordinal: day.day_ordinal,
-                day_data: day.day_data,
+                day_data: BookingServiceImpl::parse_day_data(&day.day_data)
+                    .expect("Failed to parse day data in TimetableService")
+                    .into(),
             })
             .collect();
 
@@ -127,7 +134,9 @@ impl TimetableService for TimetableServiceImpl {
             .map(|redef| DayRedefinitionOut {
                 master_id: redef.master_id,
                 date: redef.date,
-                day_data: redef.day_data,
+                day_data: BookingServiceImpl::parse_day_data(&redef.day_data)
+                    .expect("Failed to parse day data in TimetableService")
+                    .into(),
             })
             .collect();
 

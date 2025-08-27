@@ -420,6 +420,13 @@ export type UserProfileResponse = {
   patronymic?: string | null;
 };
 
+export type WindowOut = {
+  branch: BranchOut;
+  id: string;
+  master: MasterOut;
+  slots: Array<Interval>;
+};
+
 export type GetBookingNotificationsData = {
   body?: never;
   path: {
@@ -2459,10 +2466,10 @@ export type GetWindowsData = {
   query: {
     organizationName: string;
     serviceId: string;
-    masters: Array<string>;
-    branches: Array<string>;
-    minDatetime: string;
-    maxDatetime: string;
+    masters?: Array<string>;
+    branches?: Array<string>;
+    minDatetime?: string;
+    maxDatetime?: string;
   };
   url: '/api/v1/bookings/windows';
 };
@@ -2480,7 +2487,7 @@ export type GetWindowsResponses = {
   /**
    * List of branches
    */
-  200: Array<BranchOut>;
+  200: Array<WindowOut>;
 };
 
 export type GetWindowsResponse = GetWindowsResponses[keyof GetWindowsResponses];

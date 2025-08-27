@@ -17,7 +17,7 @@ use crate::{
         master::{request::GetMastersQuery, response::MasterOut},
         organization::response::OrganizationOut,
         service::{request::GetServicesQuery, response::ServiceOut},
-        timetable::request::GetWindowsQuery,
+        timetable::{request::GetWindowsQuery, response::WindowOut},
     },
 };
 
@@ -150,7 +150,7 @@ pub async fn get_branches(
     path = "/windows",
     params(GetWindowsQuery),
     responses(
-        (status = 200, description = "List of branches", body = Vec<BranchOut>),
+        (status = 200, description = "List of branches", body = Vec<WindowOut>),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     tag = "bookings"
@@ -158,9 +158,9 @@ pub async fn get_branches(
 async fn get_windows(
     State(state): State<AppState>,
     Garde(Query(query)): Garde<Query<GetWindowsQuery>>,
-) -> Result<impl IntoResponse, ApiError> {
+) -> Result<Json<Vec<WindowOut>>, ApiError> {
     let windows = state.booking_service.get_windows(&query).await?;
-    Ok(Json(windows))
+    Ok(Json(windows.into_iter().map(Into::into).collect()))
 }
 
 #[utoipa::path(

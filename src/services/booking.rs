@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDate, NaiveDateTime, Timelike};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -16,31 +16,43 @@ use crate::{
         timetable::{
             db::{DayRedefinition, ScheduleDay},
             request::GetWindowsQuery,
-            response::WindowOut,
         },
     },
     repositories::{auth::AuthRepository, booking::BookingRepository},
     services::errors::BookingServiceError,
 };
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "dayType")]
-enum DayData {
+pub enum DayData {
     #[serde(rename = "weekday", rename_all = "camelCase")]
     Weekday {
         branch_id: Uuid,
         working_interval: Interval,
         break_intervals: Vec<Interval>,
     },
-    #[serde(rename = "weekend")]
+    #[serde(rename = "weekend", rename_all = "camelCase")]
     Weekend,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct Interval {
-    start: NaiveDateTime,
-    end: NaiveDateTime,
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize)]
+pub struct Window {
+    pub id: Uuid,
+    pub slots: Vec<Interval>,
+    pub master: MasterOut,
+    pub branch: BranchOut,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize)]
+pub struct Interval {
+    pub start: NaiveDateTime,
+    pub end: NaiveDateTime,
+}
+
+impl Interval {
+    pub fn new(start: NaiveDateTime, end: NaiveDateTime) -> Self {
+        Self { start, end }
+    }
 }
 
 #[mockall::automock]
@@ -75,7 +87,7 @@ pub trait BookingService: Send + Sync {
     async fn get_windows(
         &self,
         query: &GetWindowsQuery,
-    ) -> Result<Vec<WindowOut>, BookingServiceError>;
+    ) -> Result<Vec<Window>, BookingServiceError>;
 
     async fn create_booking(
         &self,
@@ -115,7 +127,7 @@ impl BookingServiceImpl {
         start: NaiveDateTime,
         end: NaiveDateTime,
         duration_minutes: i32,
-    ) -> Vec<(NaiveDateTime, NaiveDateTime)> {
+    ) -> Vec<Interval> {
         let mut slots = Vec::new();
         let duration = Duration::minutes(duration_minutes as i64);
         let step = Duration::minutes(15);
@@ -124,18 +136,18 @@ impl BookingServiceImpl {
         let end = Self::round_to_15_minutes(end);
 
         while current + duration <= end {
-            slots.push((current, current + duration));
+            slots.push(Interval::new(current, current + duration));
             current = current + step;
         }
 
         slots
     }
 
-    fn parse_day_data(day_data: &Value) -> Option<DayData> {
+    pub fn parse_day_data(day_data: &Value) -> Option<DayData> {
         match serde_json::from_value(day_data.clone()) {
             Ok(data) => Some(data),
             Err(e) => {
-                tracing::warn!("Failed to parse day_data: {}, JSON: {}", e, day_data);
+                tracing::error!("Failed to parse day_data: {}, JSON: {}", e, day_data);
                 None
             }
         }
@@ -201,33 +213,42 @@ impl BookingServiceImpl {
         vec![]
     }
 
-    fn subtract_intervals(
-        available: Vec<(NaiveDateTime, NaiveDateTime)>,
-        busy: &[(NaiveDateTime, NaiveDateTime)],
-    ) -> Vec<(NaiveDateTime, NaiveDateTime)> {
+    fn subtract_intervals(available: Vec<Interval>, busy: &[Interval]) -> Vec<Interval> {
         let mut result = Vec::new();
 
-        for (avail_start, avail_end) in available {
-            let mut current_intervals = vec![(avail_start, avail_end)];
+        for Interval {
+            start: avail_start,
+            end: avail_end,
+        } in available
+        {
+            let mut current_intervals = vec![Interval::new(avail_start, avail_end)];
 
-            for (busy_start, busy_end) in busy {
+            for Interval {
+                start: busy_start,
+                end: busy_end,
+            } in busy
+            {
                 let mut new_intervals = Vec::new();
 
-                for (int_start, int_end) in current_intervals {
+                for Interval {
+                    start: int_start,
+                    end: int_end,
+                } in current_intervals
+                {
                     // No overlap
                     if int_end <= *busy_start || int_start >= *busy_end {
-                        new_intervals.push((int_start, int_end));
+                        new_intervals.push(Interval::new(int_start, int_end));
                         continue;
                     }
 
                     // Add the part before busy interval
                     if int_start < *busy_start {
-                        new_intervals.push((int_start, *busy_start));
+                        new_intervals.push(Interval::new(int_start, *busy_start));
                     }
 
                     // Add the part after busy interval
                     if int_end > *busy_end {
-                        new_intervals.push((*busy_end, int_end));
+                        new_intervals.push(Interval::new(*busy_end, int_end));
                     }
                 }
 
@@ -357,7 +378,7 @@ impl BookingService for BookingServiceImpl {
     async fn get_windows(
         &self,
         query: &GetWindowsQuery,
-    ) -> Result<Vec<WindowOut>, BookingServiceError> {
+    ) -> Result<Vec<Window>, BookingServiceError> {
         // Get organization to validate it exists
         let org = self
             .booking_repo
@@ -411,13 +432,12 @@ impl BookingService for BookingServiceImpl {
             .await?;
 
         // Group bookings by master
-        let mut bookings_by_master: HashMap<Uuid, Vec<(NaiveDateTime, NaiveDateTime)>> =
-            HashMap::new();
+        let mut bookings_by_master: HashMap<Uuid, Vec<Interval>> = HashMap::new();
         for booking in bookings {
             bookings_by_master
                 .entry(booking.master_id)
                 .or_insert_with(Vec::new)
-                .push((booking.started_at, booking.ended_at));
+                .push(Interval::new(booking.started_at, booking.ended_at));
         }
 
         // Calculate windows for each master
@@ -449,7 +469,7 @@ impl BookingService for BookingServiceImpl {
             let mut current_date = query.min_datetime.date();
             let end_date = query.max_datetime.date();
 
-            let mut master_slots = Vec::new();
+            let mut master_slots: Vec<Interval> = Vec::new();
             let mut branches_used = HashSet::new();
 
             while current_date <= end_date {
@@ -486,16 +506,15 @@ impl BookingService for BookingServiceImpl {
                         );
 
                         // Subtract break intervals
-                        let break_intervals_today: Vec<(NaiveDateTime, NaiveDateTime)> =
-                            break_intervals
-                                .iter()
-                                .map(|bi| {
-                                    (
-                                        current_date.and_time(bi.start.time()),
-                                        current_date.and_time(bi.end.time()),
-                                    )
-                                })
-                                .collect();
+                        let break_intervals_today: Vec<Interval> = break_intervals
+                            .iter()
+                            .map(|bi| {
+                                Interval::new(
+                                    current_date.and_time(bi.start.time()),
+                                    current_date.and_time(bi.end.time()),
+                                )
+                            })
+                            .collect();
 
                         let slots_after_breaks =
                             Self::subtract_intervals(available_slots, &break_intervals_today);
@@ -522,7 +541,7 @@ impl BookingService for BookingServiceImpl {
 
                 if let Some(branch_id) = branch_id {
                     if let Some(branch) = branch_map.get(&branch_id) {
-                        windows.push(WindowOut {
+                        windows.push(Window {
                             id: Uuid::new_v4(), // Generate unique ID for this window
                             slots: master_slots,
                             master: MasterOut {
@@ -704,21 +723,21 @@ mod tests {
         assert_eq!(slots.len(), 5);
         assert_eq!(
             slots[0],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T11:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
             )
         );
         assert_eq!(
             slots[1],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:15:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T11:15:00", "%Y-%m-%dT%H:%M:%S").unwrap()
             )
         );
         assert_eq!(
             slots[4],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T11:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T12:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
             )
@@ -737,21 +756,21 @@ mod tests {
         assert_eq!(slots.len(), 3);
         assert_eq!(
             slots[0],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T10:30:00", "%Y-%m-%dT%H:%M:%S").unwrap()
             )
         );
         assert_eq!(
             slots[1],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:15:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T10:45:00", "%Y-%m-%dT%H:%M:%S").unwrap()
             )
         );
         assert_eq!(
             slots[2],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:30:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T11:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
             )
@@ -770,7 +789,7 @@ mod tests {
         assert_eq!(slots.len(), 3);
         assert_eq!(
             slots[0],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T10:15:00", "%Y-%m-%dT%H:%M:%S").unwrap()
             )
@@ -791,14 +810,14 @@ mod tests {
         assert_eq!(slots.len(), 4);
         assert_eq!(
             slots[0],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T11:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
             )
         );
         assert_eq!(
             slots[3],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:45:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T11:45:00", "%Y-%m-%dT%H:%M:%S").unwrap()
             )
@@ -807,17 +826,17 @@ mod tests {
 
     #[test]
     fn test_subtract_intervals_no_overlap() {
-        let available = vec![(
+        let available = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T12:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
 
         let busy = vec![
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T08:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T09:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             ),
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T13:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T14:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             ),
@@ -829,12 +848,12 @@ mod tests {
 
     #[test]
     fn test_subtract_intervals_complete_overlap() {
-        let available = vec![(
+        let available = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T12:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
 
-        let busy = vec![(
+        let busy = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T09:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T13:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
@@ -845,12 +864,12 @@ mod tests {
 
     #[test]
     fn test_subtract_intervals_partial_overlap_start() {
-        let available = vec![(
+        let available = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T12:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
 
-        let busy = vec![(
+        let busy = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T09:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T10:30:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
@@ -859,7 +878,7 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert_eq!(
             result[0],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:30:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T12:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             )
@@ -868,12 +887,12 @@ mod tests {
 
     #[test]
     fn test_subtract_intervals_partial_overlap_end() {
-        let available = vec![(
+        let available = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T12:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
 
-        let busy = vec![(
+        let busy = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T11:30:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T13:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
@@ -882,7 +901,7 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert_eq!(
             result[0],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T11:30:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             )
@@ -891,12 +910,12 @@ mod tests {
 
     #[test]
     fn test_subtract_intervals_middle_overlap() {
-        let available = vec![(
+        let available = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T14:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
 
-        let busy = vec![(
+        let busy = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T11:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T12:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
@@ -905,14 +924,14 @@ mod tests {
         assert_eq!(result.len(), 2);
         assert_eq!(
             result[0],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T11:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             )
         );
         assert_eq!(
             result[1],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T12:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T14:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             )
@@ -921,7 +940,7 @@ mod tests {
 
     #[test]
     fn test_subtract_intervals_multiple_busy_periods() {
-        let available = vec![(
+        let available = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T09:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T17:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
@@ -929,17 +948,17 @@ mod tests {
         // Simulate breaks and existing bookings
         let busy = vec![
             // Morning booking
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T11:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             ),
             // Lunch break
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T13:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T14:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             ),
             // Afternoon booking
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T15:30:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T16:30:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             ),
@@ -951,28 +970,28 @@ mod tests {
         // Check resulting free intervals
         assert_eq!(
             result[0],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T09:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             )
         );
         assert_eq!(
             result[1],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T11:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T13:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             )
         );
         assert_eq!(
             result[2],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T14:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T15:30:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             )
         );
         assert_eq!(
             result[3],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T16:30:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T17:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             )
@@ -1070,13 +1089,13 @@ mod tests {
         // And existing bookings at 10:00-11:00 and 15:00-16:00
         // Service duration is 1 hour
 
-        let available = vec![(
+        let available = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T09:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T18:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
 
         // First subtract lunch break
-        let lunch_break = vec![(
+        let lunch_break = vec![Interval::new(
             NaiveDateTime::parse_from_str("2024-01-01T13:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             NaiveDateTime::parse_from_str("2024-01-01T14:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
         )];
@@ -1085,11 +1104,11 @@ mod tests {
 
         // Then subtract existing bookings
         let bookings = vec![
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T11:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             ),
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T15:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T16:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             ),
@@ -1099,7 +1118,7 @@ mod tests {
 
         // Now generate 1-hour slots with 15-minute steps
         let mut all_slots = Vec::new();
-        for (start, end) in final_free {
+        for Interval { start, end } in final_free {
             let slots = BookingServiceImpl::generate_time_slots(start, end, 60);
             all_slots.extend(slots);
         }
@@ -1114,7 +1133,7 @@ mod tests {
         // Verify first available slot
         assert_eq!(
             all_slots[0],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T09:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T10:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             )
@@ -1123,7 +1142,7 @@ mod tests {
         // Verify last available slot
         assert_eq!(
             all_slots[11],
-            (
+            Interval::new(
                 NaiveDateTime::parse_from_str("2024-01-01T17:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
                 NaiveDateTime::parse_from_str("2024-01-01T18:00:00", "%Y-%m-%dT%H:%M:%S").unwrap(),
             )
