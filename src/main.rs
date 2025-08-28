@@ -126,7 +126,10 @@ async fn main() -> anyhow::Result<()> {
         sms_provider.expect_send_notification().return_const(Ok(()));
         sms_provider
             .expect_send_verification_code()
-            .return_const(Ok(()));
+            .returning(|phone, code| {
+                tracing::info!("Verification code sent to {phone}: {code}");
+                Ok(())
+            });
         sms_provider
     });
 
