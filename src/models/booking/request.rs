@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use garde::Validate;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -22,21 +22,21 @@ pub struct CreateBookingRequest {
     #[garde(skip)]
     pub branch_id: Uuid,
 
-    #[schema(example = "2024-01-01T10:00:00")]
+    #[schema(example = "2024-01-01T10:00:00Z")]
     #[garde(skip)]
-    pub start: NaiveDateTime,
+    pub start: DateTime<Utc>,
 
-    #[schema(example = "2024-01-01T11:00:00")]
+    #[schema(example = "2024-01-01T11:00:00Z")]
     #[garde(skip)]
-    pub end: NaiveDateTime,
+    pub end: DateTime<Utc>,
 
     #[garde(skip)]
-    pub notify_methods: Vec<NotifyMethod>,
+    pub notify_methods: Vec<NotifyMethodIn>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum NotifyMethod {
+pub enum NotifyMethodIn {
     Sms,
     Telegram,
 }

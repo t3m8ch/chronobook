@@ -10,15 +10,6 @@ export type ApiError = {
   message: string;
 };
 
-export type BookingOut = {
-  branchId: string;
-  end: string;
-  id: string;
-  masterId: string;
-  serviceId: string;
-  start: string;
-};
-
 export type BranchOut = {
   addressInfo?: string | null;
   apartmentNumber: string;
@@ -83,7 +74,7 @@ export type CreateBookingRequest = {
   branchId: string;
   end: string;
   masterId: string;
-  notifyMethods: Array<NotifyMethod>;
+  notifyMethods: Array<NotifyMethodIn>;
   organizationName: string;
   serviceId: string;
   start: string;
@@ -138,6 +129,12 @@ export type CreateOrganizationRequest = {
   name: string;
 };
 
+export type CreateProfileRequest = {
+  firstName: string;
+  lastName: string;
+  patronymic?: string | null;
+};
+
 export type CreateServiceOut = {
   id: string;
 };
@@ -156,9 +153,19 @@ export type CreateTimetableRequest = {
   scheduleDays: Array<ScheduleDayIn>;
 };
 
+export type DayDataOut =
+  | {
+      weekday: {
+        branchId: string;
+        breakIntervals: Array<IntervalOut>;
+        workingInterval: IntervalOut;
+      };
+    }
+  | 'weekend';
+
 export type DayRedefinitionOut = {
   date: string;
-  dayData: unknown;
+  dayData: DayDataOut;
   masterId: string;
 };
 
@@ -199,9 +206,15 @@ export type ErrorType =
   | 'INTERNAL_SERVER'
   | 'RATE_LIMIT_EXCEEDED'
   | 'VALIDATION'
-  | 'NOT_IMPLEMENTED';
+  | 'NOT_IMPLEMENTED'
+  | 'PROFILE_INCOMPLETE';
 
 export type Interval = {
+  end: string;
+  start: string;
+};
+
+export type IntervalOut = {
   end: string;
   start: string;
 };
@@ -247,6 +260,8 @@ export type NotificationTemplateType =
 
 export type NotifyMethod = 'sms' | 'telegram';
 
+export type NotifyMethodIn = 'sms' | 'telegram';
+
 export type OrganizationDashboardOut = {
   active: boolean;
   alLeastOneBranch: boolean;
@@ -291,7 +306,7 @@ export type ScheduleDayIn =
     };
 
 export type ScheduleDayOut = {
-  dayData: unknown;
+  dayData: DayDataOut;
   dayOrdinal: number;
   masterId: string;
 };
@@ -390,8 +405,8 @@ export type UpdateNotificationTemplateRequest = {
 };
 
 export type UpdateProfileRequest = {
-  firstName: string;
-  lastName: string;
+  firstName?: string | null;
+  lastName?: string | null;
   patronymic?: string | null;
 };
 
@@ -424,7 +439,7 @@ export type WindowOut = {
   branch: BranchOut;
   id: string;
   master: MasterOut;
-  slots: Array<Interval>;
+  slots: Array<IntervalOut>;
 };
 
 export type GetBookingNotificationsData = {
@@ -2136,6 +2151,44 @@ export type GetProfileResponses = {
 
 export type GetProfileResponse = GetProfileResponses[keyof GetProfileResponses];
 
+export type CreateProfileData = {
+  body: CreateProfileRequest;
+  path?: never;
+  query?: never;
+  url: '/api/v1/auth/profile';
+};
+
+export type CreateProfileErrors = {
+  /**
+   * Bad request
+   */
+  400: ApiError;
+  /**
+   * Unauthorized
+   */
+  401: ApiError;
+  /**
+   * Profile already exists
+   */
+  409: ApiError;
+  /**
+   * Internal server error
+   */
+  500: ApiError;
+};
+
+export type CreateProfileError = CreateProfileErrors[keyof CreateProfileErrors];
+
+export type CreateProfileResponses = {
+  /**
+   * Profile created successfully
+   */
+  201: UserProfileResponse;
+};
+
+export type CreateProfileResponse =
+  CreateProfileResponses[keyof CreateProfileResponses];
+
 export type UpdateProfileData = {
   body: UpdateProfileRequest;
   path?: never;
@@ -2152,6 +2205,10 @@ export type UpdateProfileErrors = {
    * Unauthorized
    */
   401: ApiError;
+  /**
+   * Profile not found
+   */
+  404: ApiError;
   /**
    * Internal server error
    */
@@ -2264,7 +2321,7 @@ export type CreateBookingData = {
   body: CreateBookingRequest;
   path?: never;
   query?: never;
-  url: '/api/v1/bookings/';
+  url: '/api/v1/bookings';
 };
 
 export type CreateBookingErrors = {
@@ -2285,6 +2342,10 @@ export type CreateBookingErrors = {
    */
   409: Array<ApiError>;
   /**
+   * Profile incomplete - User must complete profile first
+   */
+  428: ApiError;
+  /**
    * Internal server error
    */
   500: ApiError;
@@ -2296,11 +2357,8 @@ export type CreateBookingResponses = {
   /**
    * Booking created
    */
-  201: Array<BookingOut>;
+  201: unknown;
 };
-
-export type CreateBookingResponse =
-  CreateBookingResponses[keyof CreateBookingResponses];
 
 export type GetBranchesData = {
   body?: never;

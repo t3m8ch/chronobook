@@ -122,6 +122,9 @@ import type {
   GetProfileResponse,
   GetProfileData,
   GetProfileError,
+  CreateProfileResponse,
+  CreateProfileData,
+  CreateProfileError,
   UpdateProfileResponse,
   UpdateProfileData,
   UpdateProfileError,
@@ -134,7 +137,6 @@ import type {
   VerifyTelegramResponse,
   VerifyTelegramData,
   VerifyTelegramError,
-  CreateBookingResponse,
   CreateBookingData,
   CreateBookingError,
   GetBranchesResponse,
@@ -194,11 +196,11 @@ import {
   vLoginPhoneResponse,
   vLoginTelegramResponse,
   vGetProfileResponse,
+  vCreateProfileResponse,
   vUpdateProfileResponse,
   vRefreshResponse,
   vVerifyPhoneResponse,
   vVerifyTelegramResponse,
-  vCreateBookingResponse,
   vGetBranchesResponse,
   vGetMastersResponse,
   vGetMasterByIdResponse,
@@ -1437,6 +1439,35 @@ export const getProfile = <
   });
 };
 
+export const createProfile = <
+  TComposable extends Composable,
+  DefaultT extends CreateProfileResponse = CreateProfileResponse,
+>(
+  options: Options<
+    TComposable,
+    CreateProfileData,
+    CreateProfileResponse,
+    DefaultT
+  >,
+) => {
+  return (options.client ?? _heyApiClient).post<
+    TComposable,
+    CreateProfileResponse | DefaultT,
+    CreateProfileError,
+    DefaultT
+  >({
+    responseValidator: async (data) => {
+      return await v.parseAsync(vCreateProfileResponse, data);
+    },
+    url: '/api/v1/auth/profile',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+};
+
 export const updateProfile = <
   TComposable extends Composable,
   DefaultT extends UpdateProfileResponse = UpdateProfileResponse,
@@ -1541,31 +1572,23 @@ export const verifyTelegram = <
 
 export const createBooking = <
   TComposable extends Composable,
-  DefaultT extends CreateBookingResponse = CreateBookingResponse,
+  DefaultT = undefined,
 >(
-  options: Options<
-    TComposable,
-    CreateBookingData,
-    CreateBookingResponse,
-    DefaultT
-  >,
+  options: Options<TComposable, CreateBookingData, unknown, DefaultT>,
 ) => {
   return (options.client ?? _heyApiClient).post<
     TComposable,
-    CreateBookingResponse | DefaultT,
+    unknown | DefaultT,
     CreateBookingError,
     DefaultT
   >({
-    responseValidator: async (data) => {
-      return await v.parseAsync(vCreateBookingResponse, data);
-    },
     security: [
       {
         scheme: 'bearer',
         type: 'http',
       },
     ],
-    url: '/api/v1/bookings/',
+    url: '/api/v1/bookings',
     ...options,
     headers: {
       'Content-Type': 'application/json',

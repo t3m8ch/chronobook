@@ -1,15 +1,12 @@
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
     models::{
-        booking::{request::CreateBookingRequest, response::BookingOut},
-        branch::response::BranchOut,
-        master::response::MasterOut,
-        organization::response::OrganizationOut,
-        service::response::ServiceOut,
+        booking::response::BookingOut, branch::response::BranchOut, master::response::MasterOut,
+        organization::response::OrganizationOut, service::response::ServiceOut,
         timetable::request::GetWindowsQuery,
     },
     services::errors::BookingServiceError,
@@ -85,6 +82,23 @@ pub trait BookingService: Send + Sync {
     async fn create_booking(
         &self,
         user_id: Uuid,
-        request: &CreateBookingRequest,
+        request: &CreateBookingDto,
     ) -> Result<BookingOut, BookingServiceError>;
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub struct CreateBookingDto {
+    pub organization_name: String,
+    pub service_id: Uuid,
+    pub master_id: Uuid,
+    pub branch_id: Uuid,
+    pub start: NaiveDateTime,
+    pub end: NaiveDateTime,
+    pub notify_methods: Vec<NotifyMethod>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub enum NotifyMethod {
+    Sms,
+    Telegram,
 }

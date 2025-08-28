@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     models::{
-        booking::{request::CreateBookingRequest, response::BookingOut},
+        booking::response::BookingOut,
         branch::{db::Branch, response::BranchOut},
         master::response::MasterOut,
         organization::response::OrganizationOut,
@@ -22,7 +22,7 @@ use crate::{
     },
     repositories::{auth::AuthRepository, booking::BookingRepository},
     services::{
-        booking::{BookingService, DayData, Interval, Window},
+        booking::{BookingService, CreateBookingDto, DayData, Interval, NotifyMethod, Window},
         errors::BookingServiceError,
     },
 };
@@ -512,7 +512,7 @@ impl BookingService for BookingServiceImpl {
     async fn create_booking(
         &self,
         user_id: Uuid,
-        request: &CreateBookingRequest,
+        request: &CreateBookingDto,
     ) -> Result<BookingOut, BookingServiceError> {
         // Validate times are 15-minute aligned
         if request.start.minute() % 15 != 0 || request.start.second() != 0 {
@@ -584,8 +584,8 @@ impl BookingService for BookingServiceImpl {
             .notify_methods
             .iter()
             .map(|m| match m {
-                crate::models::booking::request::NotifyMethod::Sms => "sms".to_string(),
-                crate::models::booking::request::NotifyMethod::Telegram => "telegram".to_string(),
+                NotifyMethod::Sms => "sms".to_string(),
+                NotifyMethod::Telegram => "telegram".to_string(),
             })
             .collect();
 

@@ -21,21 +21,13 @@ export const vErrorType = v.picklist([
   'RATE_LIMIT_EXCEEDED',
   'VALIDATION',
   'NOT_IMPLEMENTED',
+  'PROFILE_INCOMPLETE',
 ]);
 
 export const vApiError = v.object({
   details: v.optional(v.unknown()),
   error: vErrorType,
   message: v.string(),
-});
-
-export const vBookingOut = v.object({
-  branchId: v.pipe(v.string(), v.uuid()),
-  end: v.pipe(v.string(), v.isoTimestamp()),
-  id: v.pipe(v.string(), v.uuid()),
-  masterId: v.pipe(v.string(), v.uuid()),
-  serviceId: v.pipe(v.string(), v.uuid()),
-  start: v.pipe(v.string(), v.isoTimestamp()),
 });
 
 export const vBranchOut = v.object({
@@ -81,13 +73,13 @@ export const vBulkRecipientStrategy = v.union([
   }),
 ]);
 
-export const vNotifyMethod = v.picklist(['sms', 'telegram']);
+export const vNotifyMethodIn = v.picklist(['sms', 'telegram']);
 
 export const vCreateBookingRequest = v.object({
   branchId: v.pipe(v.string(), v.uuid()),
   end: v.pipe(v.string(), v.isoTimestamp()),
   masterId: v.pipe(v.string(), v.uuid()),
-  notifyMethods: v.array(vNotifyMethod),
+  notifyMethods: v.array(vNotifyMethodIn),
   organizationName: v.string(),
   serviceId: v.pipe(v.string(), v.uuid()),
   start: v.pipe(v.string(), v.isoTimestamp()),
@@ -156,6 +148,8 @@ export const vCreateEmployeeRequest = v.object({
   userId: v.pipe(v.string(), v.uuid()),
 });
 
+export const vNotifyMethod = v.picklist(['sms', 'telegram']);
+
 export const vNotificationTemplateType = v.picklist([
   'booking_reminder',
   'booking_confirmed',
@@ -175,6 +169,12 @@ export const vCreateOrganizationRequest = v.object({
   description: v.optional(v.union([v.string(), v.null()])),
   displayName: v.string(),
   name: v.string(),
+});
+
+export const vCreateProfileRequest = v.object({
+  firstName: v.string(),
+  lastName: v.string(),
+  patronymic: v.optional(v.union([v.string(), v.null()])),
 });
 
 export const vCreateServiceOut = v.object({
@@ -200,9 +200,25 @@ export const vCreateTimetableRequest = v.object({
   scheduleDays: v.array(vScheduleDayIn),
 });
 
+export const vIntervalOut = v.object({
+  end: v.pipe(v.string(), v.isoTimestamp()),
+  start: v.pipe(v.string(), v.isoTimestamp()),
+});
+
+export const vDayDataOut = v.union([
+  v.object({
+    weekday: v.object({
+      branchId: v.pipe(v.string(), v.uuid()),
+      breakIntervals: v.array(vIntervalOut),
+      workingInterval: vIntervalOut,
+    }),
+  }),
+  v.picklist(['weekend']),
+]);
+
 export const vDayRedefinitionOut = v.object({
   date: v.pipe(v.string(), v.isoDate()),
-  dayData: v.unknown(),
+  dayData: vDayDataOut,
   masterId: v.pipe(v.string(), v.uuid()),
 });
 
@@ -306,7 +322,7 @@ export const vPhoneVerifyRequest = v.object({
 });
 
 export const vScheduleDayOut = v.object({
-  dayData: v.unknown(),
+  dayData: vDayDataOut,
   dayOrdinal: v.pipe(
     v.number(),
     v.integer(),
@@ -435,8 +451,8 @@ export const vUpdateNotificationTemplateRequest = v.object({
 });
 
 export const vUpdateProfileRequest = v.object({
-  firstName: v.string(),
-  lastName: v.string(),
+  firstName: v.optional(v.union([v.string(), v.null()])),
+  lastName: v.optional(v.union([v.string(), v.null()])),
   patronymic: v.optional(v.union([v.string(), v.null()])),
 });
 
@@ -475,7 +491,7 @@ export const vWindowOut = v.object({
   branch: vBranchOut,
   id: v.pipe(v.string(), v.uuid()),
   master: vMasterOut,
-  slots: v.array(vInterval),
+  slots: v.array(vIntervalOut),
 });
 
 export const vGetBookingNotificationsData = v.object({
@@ -987,6 +1003,17 @@ export const vGetProfileData = v.object({
  */
 export const vGetProfileResponse = vUserProfileResponse;
 
+export const vCreateProfileData = v.object({
+  body: vCreateProfileRequest,
+  path: v.optional(v.never()),
+  query: v.optional(v.never()),
+});
+
+/**
+ * Profile created successfully
+ */
+export const vCreateProfileResponse = vUserProfileResponse;
+
 export const vUpdateProfileData = v.object({
   body: vUpdateProfileRequest,
   path: v.optional(v.never()),
@@ -1036,11 +1063,6 @@ export const vCreateBookingData = v.object({
   path: v.optional(v.never()),
   query: v.optional(v.never()),
 });
-
-/**
- * Booking created
- */
-export const vCreateBookingResponse = v.array(vBookingOut);
 
 export const vGetBranchesData = v.object({
   body: v.optional(v.never()),

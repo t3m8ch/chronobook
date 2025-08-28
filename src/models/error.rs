@@ -30,6 +30,7 @@ pub enum ErrorType {
     RateLimitExceeded,
     Validation,
     NotImplemented,
+    ProfileIncomplete,
 }
 
 impl ApiError {
@@ -88,6 +89,10 @@ impl ApiError {
     pub fn rate_limit(message: impl Into<String>) -> Self {
         Self::new(ErrorType::RateLimitExceeded, message)
     }
+
+    pub fn profile_incomplete(message: impl Into<String>) -> Self {
+        Self::new(ErrorType::ProfileIncomplete, message)
+    }
 }
 
 impl IntoResponse for ApiError {
@@ -107,6 +112,7 @@ impl IntoResponse for ApiError {
             ErrorType::RateLimitExceeded => StatusCode::TOO_MANY_REQUESTS,
             ErrorType::InternalServer => StatusCode::INTERNAL_SERVER_ERROR,
             ErrorType::NotImplemented => StatusCode::NOT_IMPLEMENTED,
+            ErrorType::ProfileIncomplete => StatusCode::PRECONDITION_REQUIRED,
         };
 
         (status, Json(self)).into_response()

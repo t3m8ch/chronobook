@@ -89,6 +89,8 @@
                   end: dayjs(slot.end),
                 }))
               "
+              :service-id="serviceId"
+              :organization-name="organizationName"
             />
             <template #fallback>
               <div class="flex justify-center items-center py-8">

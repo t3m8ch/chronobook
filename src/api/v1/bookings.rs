@@ -11,7 +11,7 @@ use crate::{
     AppState,
     extractors::auth::AuthUser,
     models::{
-        booking::{request::CreateBookingRequest, response::BookingOut},
+        booking::request::{CreateBookingRequest, NotifyMethodIn},
         branch::{request::GetBranchesQuery, response::BranchOut},
         error::ApiError,
         master::{request::GetMastersQuery, response::MasterOut},
@@ -19,6 +19,7 @@ use crate::{
         service::{request::GetServicesQuery, response::ServiceOut},
         timetable::{request::GetWindowsQuery, response::WindowOut},
     },
+    services::booking::{CreateBookingDto, NotifyMethod},
 };
 
 pub fn router() -> OpenApiRouter<AppState> {
@@ -165,14 +166,15 @@ async fn get_windows(
 
 #[utoipa::path(
     post,
-    path = "/",
+    path = "",
     request_body = CreateBookingRequest,
     responses(
-        (status = 201, description = "Booking created", body = Vec<BookingOut>),
+        (status = 201, description = "Booking created", body = ()),
         (status = 401, description = "Unauthorized - Authentication required", body = ApiError),
         (status = 404, description = "Service, branch or master not found", body = Vec<ApiError>),
         (status = 409, description = "Already booked", body = Vec<ApiError>),
         (status = 400, description = "Bad request", body = ApiError),
+        (status = 428, description = "Profile incomplete - User must complete profile first", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     security(
@@ -185,9 +187,40 @@ async fn create_booking(
     auth_user: AuthUser,
     Garde(Json(request)): Garde<Json<CreateBookingRequest>>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let booking = state
+    // Check if user has profile
+    let profile = state.auth_service.get_profile(auth_user.user_id).await?;
+    if profile.is_none() {
+        return Err(ApiError::profile_incomplete(
+            "User profile must be completed before booking".to_string(),
+        ));
+    }
+
+    state
         .booking_service
-        .create_booking(auth_user.user_id, &request)
+        .create_booking(auth_user.user_id, &request.into())
         .await?;
-    Ok(Json(booking))
+    Ok(())
+}
+
+impl Into<CreateBookingDto> for CreateBookingRequest {
+    fn into(self) -> CreateBookingDto {
+        CreateBookingDto {
+            service_id: self.service_id,
+            branch_id: self.branch_id,
+            master_id: self.master_id,
+            organization_name: self.organization_name,
+            start: self.start.naive_utc(),
+            end: self.end.naive_utc(),
+            notify_methods: self.notify_methods.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl Into<NotifyMethod> for NotifyMethodIn {
+    fn into(self) -> NotifyMethod {
+        match self {
+            NotifyMethodIn::Telegram => NotifyMethod::Telegram,
+            NotifyMethodIn::Sms => NotifyMethod::Sms,
+        }
+    }
 }
