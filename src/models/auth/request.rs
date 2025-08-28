@@ -27,7 +27,7 @@ pub struct PhoneVerifyRequest {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 #[garde(context(()))]
-pub struct UpdateProfileRequest {
+pub struct CreateProfileRequest {
     #[garde(length(min = 1, max = 100))]
     #[schema(example = "John")]
     pub first_name: String,
@@ -39,6 +39,23 @@ pub struct UpdateProfileRequest {
     #[garde(length(min = 1, max = 100))]
     #[schema(example = "Smith")]
     pub patronymic: Option<String>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Validate, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[garde(context(()))]
+pub struct UpdateProfileRequest {
+    #[garde(length(min = 1, max = 100))]
+    #[schema(example = "John")]
+    pub first_name: Option<String>,
+
+    #[garde(length(min = 1, max = 100))]
+    #[schema(example = "Doe")]
+    pub last_name: Option<String>,
+
+    #[garde(length(min = 1, max = 100))]
+    #[schema(example = "Smith")]
+    pub patronymic: Option<Option<String>>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, ToSchema)]

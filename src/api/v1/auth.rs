@@ -9,7 +9,8 @@ use crate::{
     models::{
         auth::{
             request::{
-                PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest, UpdateProfileRequest,
+                CreateProfileRequest, PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest,
+                UpdateProfileRequest,
             },
             response::{AccessToken, PhoneLoginOk, TelegramVerifyHash, UserProfileResponse},
         },
@@ -26,6 +27,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(refresh))
         .routes(routes!(logout))
         .routes(routes!(logout_all))
+        .routes(routes!(create_profile))
         .routes(routes!(update_profile))
         .routes(routes!(get_profile))
 }
@@ -231,6 +233,36 @@ fn chrono_duration_to_time(duration: chrono::Duration) -> time::Duration {
 }
 
 #[utoipa::path(
+    post,
+    path = "/profile",
+    request_body = CreateProfileRequest,
+    responses(
+        (status = 201, description = "Profile created successfully", body = UserProfileResponse),
+        (status = 400, description = "Bad request", body = ApiError),
+        (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 409, description = "Profile already exists", body = ApiError),
+        (status = 500, description = "Internal server error", body = ApiError)
+    ),
+    security(
+        ("bearer" = [])
+    ),
+    tag = "auth"
+)]
+#[tracing::instrument(skip(state))]
+#[axum::debug_handler]
+pub async fn create_profile(
+    State(state): State<AppState>,
+    auth_user: AuthUser,
+    Garde(Json(request)): Garde<Json<CreateProfileRequest>>,
+) -> Result<impl IntoResponse, ApiError> {
+    let result = state
+        .auth_service
+        .create_profile(auth_user.user_id, &request)
+        .await?;
+    Ok((axum::http::StatusCode::CREATED, Json(result)))
+}
+
+#[utoipa::path(
     put,
     path = "/profile",
     request_body = UpdateProfileRequest,
@@ -238,6 +270,7 @@ fn chrono_duration_to_time(duration: chrono::Duration) -> time::Duration {
         (status = 200, description = "Profile updated successfully", body = UserProfileResponse),
         (status = 400, description = "Bad request", body = ApiError),
         (status = 401, description = "Unauthorized", body = ApiError),
+        (status = 404, description = "Profile not found", body = ApiError),
         (status = 500, description = "Internal server error", body = ApiError)
     ),
     security(

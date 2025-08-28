@@ -9,7 +9,8 @@ use sha2::Sha256;
 use crate::{
     models::auth::{
         request::{
-            PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest, UpdateProfileRequest,
+            CreateProfileRequest, PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest,
+            UpdateProfileRequest,
         },
         response::{PhoneLoginOk, TelegramVerifyHash, UserProfileResponse},
     },
@@ -319,36 +320,66 @@ impl AuthService for AuthServiceImpl {
             .map_err(|_| AuthServiceError::InvalidRefreshToken)
     }
 
+    async fn create_profile(
+        &self,
+        user_id: uuid::Uuid,
+        request: &CreateProfileRequest,
+    ) -> Result<UserProfileResponse, AuthServiceError> {
+        // Check if profile already exists
+        if self.auth_repo.find_user_profile(user_id).await?.is_some() {
+            return Err(AuthServiceError::ProfileAlreadyExists);
+        }
+
+        // Create new profile
+        let profile = self
+            .auth_repo
+            .create_user_profile(
+                user_id,
+                &request.first_name,
+                &request.last_name,
+                request.patronymic.clone(),
+            )
+            .await?;
+
+        Ok(UserProfileResponse {
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            patronymic: profile.patronymic,
+        })
+    }
+
     async fn update_profile(
         &self,
         user_id: uuid::Uuid,
         request: &UpdateProfileRequest,
     ) -> Result<UserProfileResponse, AuthServiceError> {
         // Check if profile exists
-        let profile = match self.auth_repo.find_user_profile(user_id).await? {
-            Some(_) => {
-                // Update existing profile
-                self.auth_repo
-                    .update_user_profile(
-                        user_id,
-                        &request.first_name,
-                        &request.last_name,
-                        request.patronymic.clone(),
-                    )
-                    .await?
-            }
-            None => {
-                // Create new profile
-                self.auth_repo
-                    .create_user_profile(
-                        user_id,
-                        &request.first_name,
-                        &request.last_name,
-                        request.patronymic.clone(),
-                    )
-                    .await?
-            }
+        let existing_profile = self
+            .auth_repo
+            .find_user_profile(user_id)
+            .await?
+            .ok_or(AuthServiceError::ProfileNotFound)?;
+
+        // Prepare updated values
+        let first_name = request
+            .first_name
+            .as_ref()
+            .unwrap_or(&existing_profile.first_name);
+        let last_name = request
+            .last_name
+            .as_ref()
+            .unwrap_or(&existing_profile.last_name);
+        let patronymic = match &request.patronymic {
+            Some(Some(value)) => Some(value.clone()),
+            Some(None) => None,
+            None => existing_profile.patronymic.clone(),
         };
+
+        // Update profile
+        let profile = self
+            .auth_repo
+            .update_user_profile(user_id, first_name, last_name, patronymic)
+            .await?;
 
         Ok(UserProfileResponse {
             first_name: profile.first_name,

@@ -48,6 +48,12 @@ pub enum AuthServiceError {
     #[error("Invalid phone number format")]
     InvalidPhoneNumber,
 
+    #[error("Profile already exists")]
+    ProfileAlreadyExists,
+
+    #[error("Profile not found")]
+    ProfileNotFound,
+
     #[error("Internal server error: {0}")]
     InternalError(String),
 }
@@ -77,6 +83,8 @@ impl From<AuthServiceError> for crate::models::error::ApiError {
             AuthServiceError::UserNotFound | AuthServiceError::UserNotFoundById(_) => {
                 ApiError::not_found(err.to_string())
             }
+            AuthServiceError::ProfileAlreadyExists => ApiError::conflict(err.to_string()),
+            AuthServiceError::ProfileNotFound => ApiError::not_found(err.to_string()),
             AuthServiceError::RateLimitExceeded(_) => ApiError::rate_limit(err.to_string()),
             AuthServiceError::DatabaseError(_)
             | AuthServiceError::TokenGenerationError(_)

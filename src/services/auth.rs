@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 
 use crate::models::auth::{
-    request::{PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest, UpdateProfileRequest},
+    request::{
+        CreateProfileRequest, PhoneLoginRequest, PhoneVerifyRequest, TelegramAuthRequest,
+        UpdateProfileRequest,
+    },
     response::{PhoneLoginOk, TelegramVerifyHash, UserProfileResponse},
 };
 
@@ -41,6 +44,12 @@ pub trait AuthService: Send + Sync {
     async fn logout(&self, refresh_token: &str) -> Result<(), AuthServiceError>;
 
     async fn logout_all(&self, refresh_token: &str) -> Result<(), AuthServiceError>;
+
+    async fn create_profile(
+        &self,
+        user_id: uuid::Uuid,
+        request: &CreateProfileRequest,
+    ) -> Result<UserProfileResponse, AuthServiceError>;
 
     async fn update_profile(
         &self,
