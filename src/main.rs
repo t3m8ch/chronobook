@@ -18,6 +18,7 @@ use crate::config::Config;
 use crate::repositories::auth::PgAuthRepository;
 use crate::repositories::booking::PgBookingRepository;
 use crate::repositories::branch::PgBranchRepository;
+use crate::repositories::dashboard::DashboardRepositoryImpl;
 use crate::repositories::employee::PgEmployeeRepository;
 use crate::repositories::notification::PostgresNotificationRepository;
 use crate::repositories::organization::OrganizationRepositoryImpl;
@@ -27,6 +28,7 @@ use crate::repositories::token::{RedisTokenRepository, TokenRepository};
 use crate::services::auth::AuthService;
 use crate::services::booking::BookingService;
 use crate::services::branch::BranchService;
+use crate::services::dashboard::{DashboardService, DashboardServiceImpl};
 use crate::services::employee::EmployeeService;
 use crate::services::implementaions::auth::AuthServiceImpl;
 use crate::services::implementaions::booking::BookingServiceImpl;
@@ -56,6 +58,7 @@ pub struct AppState {
     pub auth_service: Arc<dyn AuthService>,
     pub booking_service: Arc<dyn BookingService>,
     pub branch_service: Arc<dyn BranchService>,
+    pub dashboard_service: Arc<dyn DashboardService>,
     pub employee_service: Arc<dyn EmployeeService>,
     pub notification_service: Arc<dyn NotificationService>,
     pub organization_service: Arc<dyn OrganizationService>,
@@ -162,6 +165,7 @@ async fn main() -> anyhow::Result<()> {
     let auth_repository = Arc::new(PgAuthRepository::new(pg_pool.clone()));
     let booking_repository = Arc::new(PgBookingRepository::new(pg_pool.clone()));
     let branch_repository = Arc::new(PgBranchRepository::new(pg_pool.clone()));
+    let dashboard_repository = Arc::new(DashboardRepositoryImpl::new(pg_pool.clone()));
     let employee_repository = Arc::new(PgEmployeeRepository::new(pg_pool.clone()));
     let notification_repository = Arc::new(PostgresNotificationRepository::new(pg_pool.clone()));
     let organization_repository = Arc::new(OrganizationRepositoryImpl::new(pg_pool.clone()));
@@ -183,6 +187,9 @@ async fn main() -> anyhow::Result<()> {
         branch_service: Arc::new(BranchServiceImpl::new(
             branch_repository,
             auth_repository.clone(),
+        )),
+        dashboard_service: Arc::new(DashboardServiceImpl::new(
+            dashboard_repository,
         )),
         employee_service: Arc::new(EmployeeServiceImpl::new(
             employee_repository.clone(),

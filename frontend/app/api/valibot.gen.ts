@@ -289,7 +289,7 @@ export const vOrganizationDashboardOut = v.object({
   alLeastOneMaster: v.boolean(),
   alLeastOneService: v.boolean(),
   alLeastOneTimetable: v.boolean(),
-  description: v.string(),
+  description: v.optional(v.union([v.string(), v.null()])),
   displayName: v.string(),
   id: v.string(),
   name: v.string(),

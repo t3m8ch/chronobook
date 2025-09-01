@@ -268,7 +268,7 @@ export type OrganizationDashboardOut = {
   alLeastOneMaster: boolean;
   alLeastOneService: boolean;
   alLeastOneTimetable: boolean;
-  description: string;
+  description?: string | null;
   displayName: string;
   id: string;
   name: string;

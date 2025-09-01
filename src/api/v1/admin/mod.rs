@@ -17,10 +17,12 @@ pub mod timetable;
 
 use crate::{
     AppState,
+    extractors::auth::AuthUser,
     models::{
         dashboard::response::OrganizationDashboardOut,
         error::{ApiError, ErrorType},
     },
+    services::jwt::UserRole,
 };
 
 pub fn router() -> OpenApiRouter<AppState> {
@@ -68,11 +70,31 @@ pub struct ListQuery {
     ),
     tag = "admin"
 )]
-#[tracing::instrument(skip(_state))]
+#[tracing::instrument(skip(state, auth_user))]
 pub async fn get_organization_dashboard(
     Path(organization_id): Path<Uuid>,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
+    auth_user: AuthUser,
 ) -> Result<Json<OrganizationDashboardOut>, ApiError> {
-    // TODO: Implement get organization dashboard logic
-    Err(ApiError::new(ErrorType::NotImplemented, "Not implemented"))
+    // Check if user has access to this organization
+    // User must be either an employee with Owner/Manager/Master role or a customer of this organization
+    let required_roles = vec![UserRole::Owner, UserRole::Manager, UserRole::Master];
+    
+    if !auth_user.has_access_to_organization(organization_id) && 
+       !auth_user.has_role_in_organization(organization_id, &required_roles) {
+        return Err(ApiError::forbidden("Access denied to this organization"));
+    }
+    
+    let dashboard = state
+        .dashboard_service
+        .get_organization_dashboard(organization_id)
+        .await
+        .map_err(|e| match e {
+            crate::services::errors::ServiceError::NotFound(_) => {
+                ApiError::new(ErrorType::NotFound, "Organization not found")
+            }
+            _ => ApiError::new(ErrorType::InternalServer, &e.to_string()),
+        })?;
+    
+    Ok(Json(dashboard))
 }

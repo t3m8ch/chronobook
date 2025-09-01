@@ -7,7 +7,7 @@ pub struct OrganizationDashboardOut {
     pub id: String,
     pub name: String,
     pub display_name: String,
-    pub description: String,
+    pub description: Option<String>,
     pub active: bool,
     pub al_least_one_branch: bool,
     pub al_least_one_master: bool,
