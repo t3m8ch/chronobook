@@ -1,0 +1,90 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT id, display_name, description, timezone,\n                       street, house_number, apartment_number, city, region, country,\n                       address_info, organization_id\n                FROM branches\n                WHERE organization_id = $1\n                ORDER BY created_at DESC\n                LIMIT $2 OFFSET $3\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "display_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "timezone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "street",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "house_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "apartment_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "region",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "address_info",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "organization_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "e40fe53729f00d29cc6f064dba347b10ed7ec03a143ca5cdb7b2ed8a87d1c9ed"
+}

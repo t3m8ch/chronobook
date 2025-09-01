@@ -1,0 +1,96 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                e.id,\n                e.contact_phone,\n                e.contact_email,\n                e.contact_telegram,\n                e.is_owner,\n                e.is_manager,\n                e.is_master,\n                e.organization_id,\n                e.manager_branch_id,\n                e.user_id,\n                up.first_name,\n                up.last_name,\n                up.patronymic\n            FROM employees e\n            INNER JOIN user_profiles up ON e.user_id = up.user_id\n            WHERE e.organization_id = $1\n            ORDER BY e.created_at DESC\n            LIMIT $2 OFFSET $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "contact_phone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "contact_email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "contact_telegram",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "is_owner",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_manager",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_master",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "organization_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "manager_branch_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 9,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "first_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "last_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "patronymic",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "5255865c2bc02f10a77f22008b56c2eb515dd81b156dda663cc7c2a1a575917b"
+}

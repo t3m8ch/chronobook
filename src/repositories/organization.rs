@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::Utc;
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
@@ -36,17 +37,22 @@ impl OrganizationRepository for OrganizationRepositoryImpl {
         display_name: &str,
         description: Option<&str>,
     ) -> Result<Organization, sqlx::Error> {
-        let organization = sqlx::query_as::<_, Organization>(
+        let id = Uuid::new_v4();
+        let created_at = Utc::now().naive_utc();
+        let organization = sqlx::query_as!(
+            Organization,
             r#"
-            INSERT INTO organizations (id, name, display_name, description)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO organizations (id, name, display_name, description, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id, name, display_name, description
             "#,
+            id,
+            name,
+            display_name,
+            description,
+            created_at,
+            created_at,
         )
-        .bind(Uuid::new_v4())
-        .bind(name)
-        .bind(display_name)
-        .bind(description)
         .fetch_one(&mut **tx)
         .await?;
 
@@ -54,15 +60,15 @@ impl OrganizationRepository for OrganizationRepositoryImpl {
     }
 
     async fn organization_exists_by_name(&self, name: &str) -> Result<bool, sqlx::Error> {
-        let exists = sqlx::query_scalar::<_, bool>(
+        let result = sqlx::query!(
             r#"
-            SELECT EXISTS(SELECT 1 FROM organizations WHERE name = $1)
+            SELECT EXISTS(SELECT 1 FROM organizations WHERE name = $1) as "exists!"
             "#,
+            name
         )
-        .bind(name)
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(exists)
+        Ok(result.exists)
     }
 }

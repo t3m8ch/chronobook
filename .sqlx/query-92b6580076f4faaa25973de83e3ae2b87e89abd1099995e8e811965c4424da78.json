@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE employees\n            SET updated_at = $2,\n                contact_phone = $3,\n                contact_email = $4,\n                contact_telegram = $5,\n                user_id = COALESCE($6, user_id),\n                is_owner = COALESCE($7, is_owner),\n                is_manager = COALESCE($8, is_manager),\n                is_master = COALESCE($9, is_master),\n                manager_branch_id = $10\n            WHERE id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamp",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Uuid",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "92b6580076f4faaa25973de83e3ae2b87e89abd1099995e8e811965c4424da78"
+}

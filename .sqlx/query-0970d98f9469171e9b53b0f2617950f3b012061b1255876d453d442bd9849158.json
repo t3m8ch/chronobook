@@ -1,0 +1,96 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT DISTINCT e.id,\n                       e.contact_phone, e.contact_email, e.contact_telegram,\n                       e.is_owner, e.is_manager, e.is_master,\n                       e.organization_id, e.manager_branch_id, e.user_id,\n                       up.first_name, up.last_name, up.patronymic\n                FROM employees e\n                INNER JOIN organizations o ON e.organization_id = o.id\n                INNER JOIN user_profiles up ON e.user_id = up.user_id\n                WHERE o.name = $1 AND e.is_master = true\n                AND EXISTS (\n                    SELECT 1 FROM schedule_days sd\n                    WHERE sd.master_id = e.id\n                    AND (sd.day_data->>'branch_id')::uuid = ANY($2)\n                )\n                AND EXISTS (\n                    SELECT 1 FROM services s\n                    WHERE (s.master_id = e.id OR s.master_id IS NULL)\n                    AND s.id = ANY($3)\n                )\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "contact_phone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "contact_email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "contact_telegram",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "is_owner",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "is_manager",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_master",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "organization_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "manager_branch_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 9,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "first_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "last_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "patronymic",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "UuidArray",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "0970d98f9469171e9b53b0f2617950f3b012061b1255876d453d442bd9849158"
+}

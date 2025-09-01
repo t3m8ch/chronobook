@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
@@ -14,16 +15,19 @@ use crate::{
 };
 
 pub struct EmployeeServiceImpl {
+    pool: PgPool,
     employee_repository: Arc<dyn EmployeeRepository>,
     auth_repository: Arc<dyn AuthRepository>,
 }
 
 impl EmployeeServiceImpl {
     pub fn new(
+        pool: PgPool,
         employee_repository: Arc<dyn EmployeeRepository>,
         auth_repository: Arc<dyn AuthRepository>,
     ) -> Self {
         Self {
+            pool,
             employee_repository,
             auth_repository,
         }
@@ -125,10 +129,18 @@ impl EmployeeService for EmployeeServiceImpl {
         let (is_manager, is_master, manager_branch_id) =
             Self::convert_roles_to_flags(&request.roles);
 
+        // Start transaction
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(ServiceError::DatabaseError)?;
+
         // Create the employee
         let employee = self
             .employee_repository
             .create(
+                &mut tx,
                 organization_id,
                 request.user_id,
                 request.contact_phone,
@@ -141,6 +153,9 @@ impl EmployeeService for EmployeeServiceImpl {
             )
             .await
             .map_err(ServiceError::DatabaseError)?;
+
+        // Commit transaction
+        tx.commit().await.map_err(ServiceError::DatabaseError)?;
 
         Ok(CreateEmployeeOut { id: employee.id })
     }

@@ -188,10 +188,9 @@ async fn main() -> anyhow::Result<()> {
             branch_repository,
             auth_repository.clone(),
         )),
-        dashboard_service: Arc::new(DashboardServiceImpl::new(
-            dashboard_repository,
-        )),
+        dashboard_service: Arc::new(DashboardServiceImpl::new(dashboard_repository)),
         employee_service: Arc::new(EmployeeServiceImpl::new(
+            pg_pool.clone(),
             employee_repository.clone(),
             auth_repository,
         )),

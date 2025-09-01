@@ -1,0 +1,33 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO telegram_verify_hashes (id, created_at, hash, expire_at, used, user_id)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING id, user_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamp",
+        "Bytea",
+        "Timestamp",
+        "Bool",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "3c219044f3febd322f2849ae48cbad02ee33a9e3b8d5f878330de7a649ae7b25"
+}

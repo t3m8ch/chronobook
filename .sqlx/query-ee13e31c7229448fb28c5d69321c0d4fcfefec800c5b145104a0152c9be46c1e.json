@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE timetables\n                SET recurrence_cycle_start = $2\n                WHERE master_id = $1\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ee13e31c7229448fb28c5d69321c0d4fcfefec800c5b145104a0152c9be46c1e"
+}

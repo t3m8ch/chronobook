@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO day_redefinitions (master_id, date, day_data)\n            VALUES ($1, $2, $3)\n            ON CONFLICT (master_id, date)\n            DO UPDATE SET day_data = EXCLUDED.day_data, updated_at = NOW()\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "416b73c841fb226b2aa03bef9825ad3c8bfe184267623237658746993b993b9b"
+}

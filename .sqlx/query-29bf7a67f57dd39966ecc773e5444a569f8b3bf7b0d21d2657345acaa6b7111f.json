@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM timetables WHERE master_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "29bf7a67f57dd39966ecc773e5444a569f8b3bf7b0d21d2657345acaa6b7111f"
+}

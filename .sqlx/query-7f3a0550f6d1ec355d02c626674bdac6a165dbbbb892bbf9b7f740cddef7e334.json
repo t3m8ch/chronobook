@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO services (\n                id, created_at, updated_at, display_name, description,\n                duration_minutes, price, master_id\n            )\n            VALUES ($1, NOW(), NOW(), $2, $3, $4, $5, $6)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Text",
+        "Int4",
+        "Numeric",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7f3a0550f6d1ec355d02c626674bdac6a165dbbbb892bbf9b7f740cddef7e334"
+}

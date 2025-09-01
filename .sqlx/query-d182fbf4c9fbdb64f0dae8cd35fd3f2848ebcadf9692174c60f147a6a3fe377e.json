@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM schedule_days WHERE master_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d182fbf4c9fbdb64f0dae8cd35fd3f2848ebcadf9692174c60f147a6a3fe377e"
+}

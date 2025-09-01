@@ -1,0 +1,99 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE branches\n            SET updated_at = $2,\n                display_name = COALESCE($3, display_name),\n                description = COALESCE($4, description),\n                timezone = COALESCE($5, timezone),\n                street = COALESCE($6, street),\n                house_number = COALESCE($7, house_number),\n                apartment_number = $8,\n                city = COALESCE($9, city),\n                region = COALESCE($10, region),\n                country = COALESCE($11, country),\n                address_info = $12\n            WHERE id = $1\n            RETURNING id, display_name, description, timezone,\n                      street, house_number, apartment_number, city, region, country,\n                      address_info, organization_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "display_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "timezone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "street",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "house_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "apartment_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "region",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "address_info",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "organization_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamp",
+        "Varchar",
+        "Text",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "11cabd56effff05ade478446b20041268e3a0e18a47e60df5cd4672bd26f28c1"
+}

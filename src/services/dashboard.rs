@@ -4,8 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     models::dashboard::response::OrganizationDashboardOut,
-    repositories::dashboard::DashboardRepository,
-    services::errors::ServiceError,
+    repositories::dashboard::DashboardRepository, services::errors::ServiceError,
 };
 
 #[async_trait]
@@ -39,9 +38,10 @@ impl DashboardService for DashboardServiceImpl {
             .get_organization_dashboard(organization_id)
             .await
             .map_err(|e| match e {
-                sqlx::Error::RowNotFound => ServiceError::NotFound(
-                    format!("Organization with id {} not found", organization_id)
-                ),
+                sqlx::Error::RowNotFound => ServiceError::NotFound(format!(
+                    "Organization with id {} not found",
+                    organization_id
+                )),
                 _ => ServiceError::DatabaseError(e),
             })?;
 

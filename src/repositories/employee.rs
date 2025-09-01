@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::{PgPool, Result};
+use sqlx::{PgPool, Postgres, Result, Transaction};
 use uuid::Uuid;
 
 use crate::models::employee::db::{Employee, EmployeeWithProfile};
@@ -7,8 +7,9 @@ use crate::models::employee::db::{Employee, EmployeeWithProfile};
 #[mockall::automock]
 #[async_trait]
 pub trait EmployeeRepository: Send + Sync {
-    async fn create(
+    async fn create<'a>(
         &self,
+        tx: &mut Transaction<'a, Postgres>,
         organization_id: Uuid,
         user_id: Uuid,
         contact_phone: Option<String>,
@@ -63,8 +64,9 @@ impl PgEmployeeRepository {
 
 #[async_trait]
 impl EmployeeRepository for PgEmployeeRepository {
-    async fn create(
+    async fn create<'a>(
         &self,
+        tx: &mut Transaction<'a, Postgres>,
         organization_id: Uuid,
         user_id: Uuid,
         contact_phone: Option<String>,
@@ -102,7 +104,7 @@ impl EmployeeRepository for PgEmployeeRepository {
             manager_branch_id,
             user_id
         )
-        .fetch_one(&self.pool)
+        .fetch_one(&mut **tx)
         .await
     }
 

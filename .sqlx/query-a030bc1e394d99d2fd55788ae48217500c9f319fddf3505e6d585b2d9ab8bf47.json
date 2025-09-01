@@ -1,0 +1,89 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT id, display_name, description, timezone,\n                       street, house_number, apartment_number, city, region, country,\n                       address_info, organization_id\n                FROM branches\n                ORDER BY created_at DESC\n                LIMIT $1 OFFSET $2\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "display_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "timezone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "street",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "house_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "apartment_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "region",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "address_info",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "organization_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "a030bc1e394d99d2fd55788ae48217500c9f319fddf3505e6d585b2d9ab8bf47"
+}

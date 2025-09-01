@@ -146,7 +146,7 @@ import {
   PinInputGroup,
   PinInputSlot,
 } from '@/components/ui/pin-input';
-import { loginPhone, verifyPhone, createProfile, getProfile } from '~/api';
+import { loginPhone, verifyPhone, createProfile } from '~/api';
 import { useAuth } from '~/composables/useAuth';
 
 type AuthStep = 'phone' | 'code' | 'profile';
@@ -161,7 +161,7 @@ const emit = defineEmits<{
   complete: [];
 }>();
 
-const { setAccessToken, createAuthClient } = useAuth();
+const { setAccessToken, createAuthClient, checkProfile } = useAuth();
 
 const isOpen = computed({
   get: () => props.open,
@@ -233,25 +233,22 @@ const verifyCode = async () => {
         phone: phoneNumber.value,
         code: parseInt(verificationCode.value.join('')),
       },
+      credentials: 'include',
     });
 
     if (result.data.value) {
       setAccessToken(result.data.value.accessToken);
 
-      const profileResult = await getProfile({
-        composable: 'useFetch',
-        client: createAuthClient(),
-      });
-
-      if (profileResult.data.value) {
+      const profile = await checkProfile();
+      if (profile.exists) {
         emit('complete');
         isOpen.value = false;
       } else {
-        if (profileResult.error.value?.data.error === 'NOT_FOUND') {
+        if (profile.error?.data.error === 'NOT_FOUND') {
           step.value = 'profile';
         } else {
           codeError.value = 'Произошла ошибка при проверке профиля';
-          console.error('Check profile error:', profileResult.error.value);
+          console.error('Check profile error:', profile.error);
         }
       }
     } else {

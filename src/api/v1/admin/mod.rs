@@ -79,12 +79,13 @@ pub async fn get_organization_dashboard(
     // Check if user has access to this organization
     // User must be either an employee with Owner/Manager/Master role or a customer of this organization
     let required_roles = vec![UserRole::Owner, UserRole::Manager, UserRole::Master];
-    
-    if !auth_user.has_access_to_organization(organization_id) && 
-       !auth_user.has_role_in_organization(organization_id, &required_roles) {
+
+    if !auth_user.has_access_to_organization(organization_id)
+        && !auth_user.has_role_in_organization(organization_id, &required_roles)
+    {
         return Err(ApiError::forbidden("Access denied to this organization"));
     }
-    
+
     let dashboard = state
         .dashboard_service
         .get_organization_dashboard(organization_id)
@@ -95,6 +96,6 @@ pub async fn get_organization_dashboard(
             }
             _ => ApiError::new(ErrorType::InternalServer, &e.to_string()),
         })?;
-    
+
     Ok(Json(dashboard))
 }

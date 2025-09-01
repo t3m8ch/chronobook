@@ -66,6 +66,7 @@ impl OrganizationService for OrganizationServiceImpl {
         // Create employee record with owner role
         self.employee_repo
             .create(
+                &mut tx,
                 organization.id,
                 user_id,
                 None,  // contact_phone

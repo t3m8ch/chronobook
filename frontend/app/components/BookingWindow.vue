@@ -128,7 +128,7 @@ const props = defineProps<{
 }>();
 
 const route = useRoute();
-const { isAuthenticated, createAuthClient, checkProfile } = useAuth();
+const { isAuthenticated, createAuthClient } = useAuth();
 
 const selectedSlot = ref<{ start: Dayjs; end: Dayjs } | null>(null);
 const bookedSlot = ref<{ start: Dayjs; end: Dayjs } | null>(null);
